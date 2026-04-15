@@ -4,8 +4,22 @@ from typing import Any, Dict, Optional
 import os
 import numpy as np
 import rasterio
+import tifffile
 
 
+def export_plain_tif(arr: np.ndarray, out_path: str) -> None:
+    """
+    Write an array to a plain TIFF file without geospatial metadata.
+
+    Args:
+        arr: Array to write.
+        out_path: Destination path of the TIFF file.
+
+    Returns:
+        None.
+    """
+    tifffile.imwrite(out_path, arr)
+    
 def export_to_tif(
     out_path: str,
     arr: np.ndarray,

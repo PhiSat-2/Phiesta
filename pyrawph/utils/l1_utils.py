@@ -8,11 +8,20 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import rasterio
 
-from .geo_utils import normalize_bounds
 
 
 def _find_one_any(patterns: List[str]) -> Optional[str]:
-    """Return first matching path across a list of glob patterns."""
+    """
+    Return the first existing path among several glob patterns.
+
+    Patterns are checked in order. The first match found is returned.
+
+    Args:
+        patterns: List of glob patterns to test.
+
+    Returns:
+        The first matching path, or `None` if no file matches.
+    """
     for pat in patterns:
         hits = globlib.glob(pat)
         if hits:
@@ -110,8 +119,7 @@ def read_L1_event_from_folder_phisat2(
                 "height": int(ds.height),
                 "dtype": str(arr.dtype),
                 "crs": str(ds.crs) if ds.crs is not None else None,
-                "transform": ds.transform,
-                "bounds": normalize_bounds(ds.bounds),
+                "transform": ds.transform
             }
 
     else:
@@ -149,8 +157,7 @@ def read_L1_event_from_folder_phisat2(
                         "width": int(ds.width),
                         "height": int(ds.height),
                         "crs": str(ds.crs) if ds.crs is not None else None,
-                        "transform": ds.transform,
-                        "bounds": normalize_bounds(ds.bounds),
+                        "transform": ds.transform
                     }
 
         arr = np.stack(stacks, axis=0)

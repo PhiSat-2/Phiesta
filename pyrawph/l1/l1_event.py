@@ -1,4 +1,3 @@
-# pyrawph/l1/l1_event.py
 from __future__ import annotations
 
 import os
@@ -13,11 +12,6 @@ try:
 except Exception:  
     torch = None 
 
-from pyrawph.utils.optional_plots import plot_bounds, plot_gl_footprint
-import rasterio
-from rasterio.windows import Window
-from rasterio.windows import bounds as window_bounds
-from rasterio.windows import transform as window_transform
 
 try:
     from termcolor import colored
@@ -25,11 +19,14 @@ except Exception:
     def colored(x, *_args, **_kwargs): 
         return x
 
-from .l1_tile import L1_tile
 from ..utils.l1_utils import read_L1_event_from_folder_phisat2
-from ..utils.geo_utils import normalize_bounds
 from ..utils.processing_utils import make_rgb, normalized_difference
 from ..utils.export_utils import export_to_tif as _export_to_tif
+
+from rasterio.windows import Window, bounds as window_bounds, transform as window_transform
+
+from ..remote.insula_client import InsulaClient
+
 
 BandSpec = Union[int, str, float]
 
@@ -55,25 +52,27 @@ def _try_parse_product_times(product_folder: str) -> Tuple[Optional[str], Option
         return _fmt(t0), _fmt(t1)
     except Exception:
         return None, None
+    
+
 
 
 class L1_event:
     """
-    Represent a local ΦSat-2 L1 scene together with its array data, metadata,
-    and derived in-memory tiles.
+    Represent one local ΦSat-2 L1 scene as a multispectral cube with shape
+    (C, H, W) and associated metadata.
 
-    This class is the main high-level entry point for loading a ΦSat-2 product,
-    accessing spectral bands, computing simple spectral products, cropping the
-    scene in pixel coordinates, splitting it into tiles, plotting its geographic
-    location, and exporting arrays to GeoTIFF.
+    This class provides the core high-level interface for:
+    - loading a local L1 product,
+    - accessing bands by index, wavelength, or alias,
+    - building RGB composites,
+    - computing simple normalized-difference indices,
+    - cropping in pixel coordinates,
+    - exporting the result to GeoTIFF,
+    - inspecting basic event metadata.
 
-    An event stores the full scene as a NumPy array with shape `(C, H, W)`, where
-    `C` is the number of bands, and keeps a metadata dictionary containing
-    geospatial information such as CRS, affine transform, bounds, wavelengths,
-    and product-related paths.
-
-    The recommended constructor is :meth:`from_path`, which reads a local product
-    folder and initializes the event from disk.
+    The class intentionally stays lightweight and does not manage tiles or higher-
+    level pairing logic. Cross-space registration between L0 and L1 is handled by
+    separate utilities.
     """
 
     # alias wavelengths (nm) -> resolve by closest wavelength
@@ -96,6 +95,20 @@ class L1_event:
         product_kind: str,
         device: str = "cpu",
     ):
+        """
+        Initialize an :class:`L1_event` from an array and metadata.
+
+        Args:
+            arr: Multispectral array with shape `(C, H, W)`.
+            meta: Metadata dictionary associated with the scene.
+            product_folder: Path to the source product folder.
+            scene_id: Scene identifier inside the product.
+            product_kind: Product variant, for example `"BC"`.
+            device: Target device used when converting the event to a torch tensor.
+
+        Raises:
+            ValueError: If the provided array is not three-dimensional.
+        """
         self._arr = arr
         self._meta = meta
         self._product_folder = product_folder
@@ -109,17 +122,11 @@ class L1_event:
             self._meta["sensing_time"] = st
         if "creation_time" not in self._meta:
             self._meta["creation_time"] = ct
+        
+        if self._arr.ndim != 3:
+            raise ValueError(f"L1_event expects (C,H,W), got {self._arr.shape}.")
 
-        # default "tile" is the whole scene
-        self._tiles: List[L1_tile] = [
-            L1_tile(
-                tile_name=f"scene_{self._scene_id}_{self._product_kind}",
-                arr=self._arr,
-                meta=self._meta,
-                device=self._device,
-            )
-        ]
-        self.n_tiles = 1
+        
 
     # constructors
     @classmethod
@@ -180,6 +187,119 @@ class L1_event:
             product_kind=product_kind,
             device=device,
         )
+    
+    @classmethod
+    def from_insula_search(
+        cls,
+        client: InsulaClient,
+        ref_data_collection: str,
+        page: int = 0,
+        results_per_page: int = 1,
+        feature_index: int = 0,
+        keep_zip: bool = False,
+        skip_existing: bool = True,
+        force_redownload: bool = False,
+        scene_id: int = 0,
+        product_kind: str = "BC",
+        multiband: bool = True,
+        bands: Optional[List[int]] = None,
+        as_float32: bool = True,
+        verbose: bool = True,
+        device: str = "cpu",
+        **search_filters,
+    ) -> "L1_event":
+        data = client.search_ref_data(
+            ref_data_collection=ref_data_collection,
+            page=page,
+            results_per_page=results_per_page,
+            **search_filters,
+        )
+
+        features = data.get("features", [])
+        if not features:
+            raise ValueError("No feature found for this Insula search.")
+
+        if not (0 <= feature_index < len(features)):
+            raise IndexError(
+                f"feature_index={feature_index} out of range for {len(features)} result(s)."
+            )
+
+        feature = features[feature_index]
+        product_folder = client.download_feature(
+            feature,
+            extract=True,
+            keep_zip=keep_zip,
+            skip_existing=skip_existing,
+            force_redownload=force_redownload,
+        )
+
+        event = cls.from_path(
+            product_folder=str(product_folder),
+            scene_id=scene_id,
+            product_kind=product_kind,
+            multiband=multiband,
+            bands=bands,
+            as_float32=as_float32,
+            verbose=verbose,
+            device=device,
+        )
+
+        props = feature["properties"]
+        event._meta["source"] = "insula"
+        event._meta["insula_filename"] = props.get("filename")
+        event._meta["insula_product_identifier"] = props.get("productIdentifier")
+        event._meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
+        event._meta["insula_platform_url"] = props.get("platformUrl")
+        return event
+
+    @classmethod
+    def from_insula_identifier(
+        cls,
+        client: InsulaClient,
+        ref_data_collection: str,
+        identifier: str,
+        keep_zip: bool = False,
+        skip_existing: bool = True,
+        force_redownload: bool = False,
+        scene_id: int = 0,
+        product_kind: str = "BC",
+        multiband: bool = True,
+        bands: Optional[List[int]] = None,
+        as_float32: bool = True,
+        verbose: bool = True,
+        device: str = "cpu",
+    ) -> "L1_event":
+        feature = client.get_feature_by_identifier(
+            ref_data_collection=ref_data_collection,
+            identifier=identifier,
+        )
+
+        product_folder = client.download_feature(
+            feature,
+            extract=True,
+            keep_zip=keep_zip,
+            skip_existing=skip_existing,
+            force_redownload=force_redownload,
+        )
+
+        event = cls.from_path(
+            product_folder=str(product_folder),
+            scene_id=scene_id,
+            product_kind=product_kind,
+            multiband=multiband,
+            bands=bands,
+            as_float32=as_float32,
+            verbose=verbose,
+            device=device,
+        )
+
+        props = feature["properties"]
+        event._meta["source"] = "insula"
+        event._meta["insula_filename"] = props.get("filename")
+        event._meta["insula_product_identifier"] = props.get("productIdentifier")
+        event._meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
+        event._meta["insula_platform_url"] = props.get("platformUrl")
+        return event
 
     # basic getters
     def as_numpy(self) -> np.ndarray:
@@ -242,33 +362,42 @@ class L1_event:
         w = self._meta.get("band_wavelength_nm", None)
         return list(w) if isinstance(w, (list, tuple)) else []
 
-    # band resolving (closest wavelength)
     def _resolve_band(self, band: BandSpec) -> int:
         """
-        Resolve a band specification to a zero-based band index.
+        Resolve a band selector to a zero-based local channel index in the currently
+        loaded array.
 
-        The resolver accepts several selector formats:
-        - integer band indices,
+        Supported selectors include:
+        - integer local channel indices,
         - float wavelengths in nanometers,
         - strings such as `"842nm"`, `"3"`, `"B3"`, or `"BAND_3"`,
-        - spectral aliases such as `"BLUE"`, `"GREEN"`, `"RED"`, `"RE1"`,
-        `"RE2"`, `"RE3"`, or `"NIR"`.
+        - aliases such as `"BLUE"`, `"GREEN"`, `"RED"`, `"RE1"`, `"RE2"`, `"RE3"`,
+        and `"NIR"`.
 
-        When a wavelength or alias is provided, the closest available wavelength in
-        the event metadata is used.
+        If the metadata contains `picked_bands`, selectors such as `"B3"` are first
+        interpreted as original physical band identifiers and then mapped to the local
+        channel index. Otherwise, they fall back to local indexing.
 
         Args:
             band: Band selector to resolve.
 
         Returns:
-            The resolved zero-based band index.
+            The resolved local channel index.
 
         Raises:
-            ValueError: If the band specification is invalid, out of range, or cannot
-                be resolved from the available wavelength metadata.
+            ValueError: If the selector cannot be resolved.
         """
-        
         C = int(self._arr.shape[0])
+        picked = list(self._meta.get("picked_bands", list(range(C))))
+        wls = self.get_wavelengths()
+
+        def _closest_wavelength_index(target_nm: int) -> int:
+            if not wls:
+                raise ValueError("No wavelengths in metadata; cannot resolve by wavelength.")
+            valid = [(i, v) for i, v in enumerate(wls) if v is not None]
+            if not valid:
+                raise ValueError("No valid wavelengths in metadata; cannot resolve by wavelength.")
+            return int(min(valid, key=lambda iv: abs(int(iv[1]) - target_nm))[0])
 
         if isinstance(band, int):
             if not (0 <= band < C):
@@ -276,42 +405,34 @@ class L1_event:
             return band
 
         if isinstance(band, float):
-            wl = int(round(band))
-            wls = self.get_wavelengths()
-            if not wls:
-                raise ValueError("No wavelengths in metadata; cannot resolve float wavelength.")
-
-            valid = [(i, v) for i, v in enumerate(wls) if v is not None]
-            if not valid:
-                raise ValueError("No valid wavelengths in metadata; cannot resolve float wavelength.")
-
-            idx = min(valid, key=lambda iv: abs(int(iv[1]) - wl))[0]
-            return int(idx)
+            return _closest_wavelength_index(int(round(band)))
 
         s = str(band).strip().upper()
         s_clean = s.replace(" ", "").replace("_", "")
+
         if s_clean.endswith("NM") and s_clean[:-2].isdigit():
-            return self._resolve_band(float(int(s_clean[:-2])))
+            target_nm = int(s_clean[:-2])
+            return _closest_wavelength_index(target_nm)
 
         if s.isdigit():
-            return self._resolve_band(int(s))
+            raw_idx = int(s)
+            if raw_idx in picked:
+                return picked.index(raw_idx)
+            if 0 <= raw_idx < C:
+                return raw_idx
+            raise ValueError(f"Band {raw_idx} not available in picked_bands={picked}")
 
         for prefix in ("BAND_", "BAND", "B"):
             if s.startswith(prefix) and s[len(prefix):].isdigit():
-                return self._resolve_band(int(s[len(prefix):]))
+                raw_idx = int(s[len(prefix):])
+                if raw_idx in picked:
+                    return picked.index(raw_idx)
+                if 0 <= raw_idx < C:
+                    return raw_idx
+                raise ValueError(f"Band {raw_idx} not available in picked_bands={picked}")
 
         if s in self._ALIAS_NM:
-            target_nm = int(self._ALIAS_NM[s])
-            wls = self.get_wavelengths()
-            if not wls:
-                raise ValueError("No wavelengths in metadata; cannot resolve band name.")
-
-            valid = [(i, v) for i, v in enumerate(wls) if v is not None]
-            if not valid:
-                raise ValueError("No valid wavelengths in metadata; cannot resolve band name.")
-
-            idx = min(valid, key=lambda iv: abs(int(iv[1]) - target_nm))[0]
-            return int(idx)
+            return _closest_wavelength_index(int(self._ALIAS_NM[s]))
 
         raise ValueError(f"Cannot resolve band spec: {band!r}")
 
@@ -409,15 +530,13 @@ class L1_event:
 
         raise ValueError(f"Unknown index: {name!r}")
 
-    # geo / crop
-    def crop_px(self, y0: int, y1: int, x0: int, x1: int) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def crop_px(self, y0: int, y1: int, x0: int, x1: int) -> "L1_event":
         """
-        Crop the event in pixel coordinates and return the cropped array and metadata.
+        Crop the event in pixel coordinates and return a new :class:`L1_event`.
 
-        The crop is defined using half-open intervals `[y0:y1, x0:x1]` in image
-        coordinates. Bounds are clamped to the valid image extent. When geospatial
-        metadata is available, the affine transform and geographic bounds are updated
-        to match the cropped window.
+        The crop is defined using half-open intervals `[y0:y1, x0:x1]`. Bounds are
+        clamped to the valid image extent. When affine metadata is available, the
+        transform and bounds are updated to match the cropped window.
 
         Args:
             y0: Start row index.
@@ -426,13 +545,10 @@ class L1_event:
             x1: End column index (exclusive).
 
         Returns:
-            A tuple `(arr_crop, meta_crop)` where:
-            - `arr_crop` is the cropped array with shape `(C, h, w)`,
-            - `meta_crop` is a copy of the metadata updated with the cropped size and,
-                when possible, updated transform and bounds.
+            A new :class:`L1_event` containing the cropped array and updated metadata.
 
         Raises:
-            ValueError: If the resulting crop is empty or invalid after clamping.
+            ValueError: If the resulting crop is empty or invalid.
         """
         H, W = int(self._arr.shape[1]), int(self._arr.shape[2])
 
@@ -444,11 +560,12 @@ class L1_event:
         if y0c >= y1c or x0c >= x1c:
             raise ValueError(f"Invalid crop after clamp: y[{y0c},{y1c}) x[{x0c},{x1c}) for H={H}, W={W}")
 
-        arr_c = self._arr[:, y0c:y1c, x0c:x1c]
+        arr_c = self._arr[:, y0c:y1c, x0c:x1c].copy()
 
         meta_c = dict(self._meta)
         meta_c["height"] = int(y1c - y0c)
         meta_c["width"] = int(x1c - x0c)
+        meta_c["crop_box"] = [y0c, y1c, x0c, x1c]
 
         t0 = self._meta.get("transform", None)
         if t0 is not None:
@@ -456,257 +573,29 @@ class L1_event:
             meta_c["transform"] = window_transform(win, t0)
             try:
                 left, bottom, right, top = window_bounds(win, t0)
-                meta_c["bounds"] = normalize_bounds(
-                    rasterio.coords.BoundingBox(left=left, bottom=bottom, right=right, top=top)
-                )
+                meta_c["bounds"] = (left, bottom, right, top)
             except Exception:
                 pass
 
-        return arr_c, meta_c
+        return L1_event(
+            arr=arr_c,
+            meta=meta_c,
+            product_folder=self._product_folder,
+            scene_id=self._scene_id,
+            product_kind=self._product_kind,
+            device=self._device,
+        )
 
-    # tiling
-    def to_tiles(self, tile_size: int = 512, overlap: int = 0, drop_last: bool = False) -> List[L1_tile]:
-        """
-        Split the event into a regular grid of in-memory tiles.
-
-        Tiles are extracted from the event array using a sliding window with optional
-        overlap. Each produced tile is stored as an :class:`L1_tile` instance and the
-        internal tile collection of the event is replaced by the generated tiles.
-
-        If `drop_last=False`, border tiles are kept even if they are smaller than
-        `tile_size`. If `drop_last=True`, only full tiles are retained.
-
-        Args:
-            tile_size: Tile size in pixels for both height and width.
-            overlap: Overlap in pixels between consecutive tiles.
-            drop_last: Whether to discard incomplete border tiles.
-
-        Returns:
-            A list of generated :class:`L1_tile` objects.
-
-        Raises:
-            ValueError: If `overlap` does not satisfy
-                `0 <= overlap < tile_size`.
-        """
-        H, W = int(self._arr.shape[1]), int(self._arr.shape[2])
-        if overlap < 0 or overlap >= tile_size:
-            raise ValueError("overlap must satisfy 0 <= overlap < tile_size")
-        step = max(1, tile_size - overlap)
-
-        tiles: List[L1_tile] = []
-        t0 = self._meta.get("transform", None)
-
-        for y0 in range(0, H, step):
-            y1 = y0 + tile_size
-            if y1 > H:
-                if drop_last:
-                    break
-                y1 = H
-
-            for x0 in range(0, W, step):
-                x1 = x0 + tile_size
-                if x1 > W:
-                    if drop_last:
-                        break
-                    x1 = W
-
-                arr_t = self._arr[:, y0:y1, x0:x1]
-                meta_t = dict(self._meta)
-                meta_t["height"] = int(y1 - y0)
-                meta_t["width"] = int(x1 - x0)
-
-                if t0 is not None:
-                    win = Window(col_off=x0, row_off=y0, width=(x1 - x0), height=(y1 - y0))
-                    meta_t["transform"] = window_transform(win, t0)
-                    left, bottom, right, top = window_bounds(win, t0)
-                    meta_t["bounds"] = normalize_bounds(
-                        rasterio.coords.BoundingBox(left=left, bottom=bottom, right=right, top=top)
-                    )
-
-                name = f"tile_y{y0}_x{x0}_s{tile_size}_o{overlap}"
-                tiles.append(L1_tile(tile_name=name, arr=arr_t, meta=meta_t, device=self._device))
-
-        self._tiles = tiles
-        self.n_tiles = len(tiles)
-        return tiles
-
-    def make_tiles(self, tile_size: int = 512, overlap: int = 0, drop_last: bool = False) -> List[L1_tile]:
-        """
-        Alias for :meth:`to_tiles`.
-
-        This method exists for API convenience and forwards all arguments to
-        :meth:`to_tiles`.
-
-        Args:
-            tile_size: Tile size in pixels for both height and width.
-            overlap: Overlap in pixels between consecutive tiles.
-            drop_last: Whether to discard incomplete border tiles.
-
-        Returns:
-            A list of generated :class:`L1_tile` objects.
-        """
-        return self.to_tiles(tile_size=tile_size, overlap=overlap, drop_last=drop_last)
-
-    # tiles infos
-    def get_tiles_names(self, tiles_idx=None) -> List[str]:
-        """
-        Return the names of the currently available tiles.
-
-        If `tiles_idx` is not provided, names for all tiles in the current tile
-        collection are returned. If a subset of indices is given, only the
-        corresponding tile names are returned, in the requested order.
-
-        Args:
-            tiles_idx: Optional iterable of tile indices to query.
-
-        Returns:
-            A list of tile names.
-
-        Raises:
-            ValueError: If the tile collection is empty.
-            IndexError: If one of the requested tile indices is out of range.
-        """
-        if len(self._tiles) == 0:
-            raise ValueError("Empty tiles lists.")
-
-        if tiles_idx is None:
-            tiles_idx = range(len(self._tiles))
-
-        names: List[str] = []
-        for i in tiles_idx:
-            names.append(self.get_tile(i).tile_name)
-        return names
-
-    def get_tiles_info(self, tiles_idx=None) -> Dict[str, Any]:
-        """
-        Return structured information for the currently available tiles.
-
-        Each entry is obtained from :meth:`L1_tile.get_tile_info` and stored in a
-        dictionary keyed by tile name. The corresponding value is a tuple containing
-        the tile name, sensing time, creation time, tile corner coordinates, and tile
-        footprint coordinates.
-
-        Args:
-            tiles_idx: Optional iterable of tile indices to query. If `None`, all
-                tiles are included.
-
-        Returns:
-            A dictionary mapping each tile name to its information tuple.
-
-        Raises:
-            ValueError: If the tile collection is empty.
-            IndexError: If one of the requested tile indices is out of range.
-        """
-        if len(self._tiles) == 0:
-            raise ValueError("Empty tiles lists.")
-
-        if tiles_idx is None:
-            tiles_idx = range(len(self._tiles))
-
-        tiles_names: List[str] = []
-        tiles_info: List[Any] = []
-        for i in tiles_idx:
-            t = self.get_tile(i)
-            info = t.get_tile_info()
-            tiles_info.append(info)
-            tiles_names.append(info[0])
-
-        return dict(zip(tiles_names, tiles_info))
-
-    def show_tiles_info(self) -> None:
-        """
-        Print human-readable information for all currently available tiles.
-
-        For each tile, this method prints a PyRawS-style summary including the tile
-        name, sensing time, creation time, corner coordinates, and footprint
-        coordinates.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError: If the tile collection is empty.
-        """
-        tiles_info = self.get_tiles_info()
-        tiles_names = list(tiles_info.keys())
-
-        for i in range(len(tiles_names)):
-            print(colored("------------------Tile " + str(i) + " ----------------------------", "blue"))
-            print("Name: ", colored(tiles_info[tiles_names[i]][0], "red"))
-            print("Sensing time: ", colored(str(tiles_info[tiles_names[i]][1]), "red"))
-            print("Creation time: ", colored(str(tiles_info[tiles_names[i]][2]), "red"))
-
-            coordinates = tiles_info[tiles_names[i]][3]
-            footprint_coordinates = tiles_info[tiles_names[i]][4]
-
-            print("Corners coordinates: \n")
-            for k in range(len(coordinates)):
-                print(colored("\tP_" + str(k), "blue") + " : " + colored(str(coordinates[k]) + "\n", "red"))
-
-            print("\n")
-            print("Footprint's coordinates: \n")
-            for k in range(len(footprint_coordinates)):
-                print(colored("\tP_" + str(k), "blue") + " : " + colored(str(footprint_coordinates[k]) + "\n", "red"))
-            print("\n")
     
-    def show_bands(self, bands=None, tile=0, **kwargs) -> None:
-        """
-        Display one or more bands for a selected tile.
-
-        This is a convenience wrapper around :meth:`L1_tile.show_bands`. By default,
-        it visualizes the first tile in the current collection.
-
-        Args:
-            bands: Optional sequence of band selectors to display. If `None`, all
-                bands of the selected tile are shown.
-            tile: Tile index or tile name identifying which tile to visualize.
-            **kwargs: Additional keyword arguments forwarded to
-                :meth:`L1_tile.show_bands`, such as downsampling, max_size, stretch,
-                or cmap.
-
-        Returns:
-            None.
-
-        Raises:
-            IndexError: If the requested tile index is out of range.
-            KeyError: If the requested tile name does not exist.
-            ValueError: If one of the requested band selectors cannot be resolved.
-        """
-        t = self.get_tile(tile)
-        t.show_bands(bands=bands, **kwargs)
-
-    def get_tile(self, idx_or_name: Union[int, str]) -> L1_tile:
-        """
-        Return one tile from the current tile collection.
-
-        A tile can be retrieved either by integer index or by its `tile_name`.
-
-        Args:
-            idx_or_name: Tile index or tile name.
-
-        Returns:
-            The requested :class:`L1_tile` instance.
-
-        Raises:
-            IndexError: If an integer index is out of range.
-            KeyError: If a tile name is requested but no matching tile exists.
-        """
-        if isinstance(idx_or_name, int):
-            return self._tiles[idx_or_name]
-        name = str(idx_or_name)
-        for t in self._tiles:
-            if t.tile_name == name:
-                return t
-        raise KeyError(f"Tile not found: {name}")
+    
 
     def show_event_info(self) -> None:
         """
-        Print a concise summary of the current event.
+        Print a concise summary of the event.
 
-        The printed summary includes the scene identifier, product kind, product
-        folder, source path, array shape and dtype, CRS, geographic bounds, band
-        wavelengths, GL file path, processing configuration path, and the current
-        number of in-memory tiles.
+        The summary includes the scene identifier, product kind, folder and source path,
+        array shape and dtype, CRS, geographic bounds, band wavelengths, and the main
+        sidecar files if available.
 
         Returns:
             None.
@@ -720,87 +609,7 @@ class L1_event:
         print("  wavelengths_nm:", colored(str(self.get_wavelengths()), "red"))
         print("  gl_path:", colored(str(self._meta.get("gl_path", None)), "red"))
         print("  processing_config:", colored(str(self._meta.get("processing_config_path", None)), "red"))
-        print("  n_tiles:", colored(str(self.n_tiles), "red"))
     
-    def plot_location(
-        self,
-        mode: str = "bounds",              # "bounds" | "footprint"
-        world: bool = True,
-        tiles_idx=None,
-        title: Optional[str] = None,
-    ):
-        """
-        Plot the geographic location of the event and optionally overlay tile bounds.
-
-        Two plotting modes are supported:
-        - `"bounds"`: plot the axis-aligned geographic bounding box stored in the
-        event metadata,
-        - `"footprint"`: plot the scene footprint derived from the GL JSON file
-        referenced by the metadata.
-
-        If `tiles_idx` is provided, the geographic bounds of the selected tiles are
-        overlaid as rectangles on top of the scene plot.
-
-        Args:
-            mode: Plotting mode, either `"bounds"` or `"footprint"`.
-            world: If `True`, attempt to display the scene on top of a world basemap.
-            tiles_idx: Optional iterable of tile indices to overlay.
-            title: Optional plot title. If `None`, a default title based on the scene
-                identifier and product kind is used.
-
-        Returns:
-            The Matplotlib axes used for the plot.
-
-        Raises:
-            ValueError: If the requested mode is unknown, or if the required
-                geospatial metadata is missing for the selected mode.
-        """
-        m = str(mode).strip().lower()
-
-        if m == "bounds":
-            from ..utils.optional_plots import plot_bounds
-
-            b0 = self._meta.get("bounds", None)
-            if b0 is None:
-                raise ValueError("No bounds in event meta; cannot plot location (bounds).")
-
-            ax = plot_bounds(
-                b0,
-                world=world,
-                title=title or f"scene_{self._scene_id}_{self._product_kind}",
-            )
-
-            if tiles_idx is not None:
-                for i in tiles_idx:
-                    bi = self.get_tile(i).meta.get("bounds", None)
-                    if bi is not None:
-                        plot_bounds(bi, ax=ax, world=False, title=None, linewidth=1.0)
-
-            return ax
-
-        if m == "footprint":
-            from ..utils.optional_plots import plot_gl_footprint, plot_bounds
-
-            gl = self._meta.get("gl_path", None)
-            if gl is None:
-                raise ValueError("No gl_path in meta; cannot plot location (footprint).")
-
-            ax = plot_gl_footprint(
-                gl,
-                world=world,
-                title=title or f"scene_{self._scene_id}_{self._product_kind}",
-            )
-
-            # optional overlay: tiles bounds (rectangles)
-            if tiles_idx is not None:
-                for i in tiles_idx:
-                    bi = self.get_tile(i).meta.get("bounds", None)
-                    if bi is not None:
-                        plot_bounds(bi, ax=ax, world=False, title=None, linewidth=1.0)
-
-            return ax
-
-        raise ValueError(f"Unknown mode: {mode!r} (expected 'bounds' or 'footprint').")
     
     
 

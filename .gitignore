@@ -1,35 +1,7 @@
-# Python cache
-__pycache__/
-*.py[cod]
-*.pyo
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Virtual environments
-.venv/
-venv/
-
-# Packaging
-*.egg-info/
-dist/
-build/
-
-# Sphinx build
-docs/build/
+﻿insula_cache/
 docs/_build/
-
-# Data
-data/**
-!data/.gitkeep
-
-# Outputs
-outputs/**
-!outputs/.gitkeep
-demo_outputs/
-outputs_pyrawph_test/
-outputs/demo/
-
-# OS / editor noise
-.DS_Store
-Thumbs.db
+pyrawph.egg-info/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+data/

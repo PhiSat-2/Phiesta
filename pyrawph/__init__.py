@@ -1,8 +1,6 @@
-from .l1.l1_event import L1_event
-from .utils.l1_utils import read_L1_event_from_folder_phisat2
-
 from .l0 import L0_event
-from .remote import InsulaClient
+from .l1 import L1_event
+from .remote import connect_insula
 from .utils.l0_l1_registration import (
     register_l0_to_l1_space,
     project_points_l1_to_l0_native,
@@ -10,10 +8,9 @@ from .utils.l0_l1_registration import (
 )
 
 __all__ = [
-    "L1_event",
-    "read_L1_event_from_folder_phisat2",
     "L0_event",
-    "InsulaClient",
+    "L1_event",
+    "connect_insula",
     "register_l0_to_l1_space",
     "project_points_l1_to_l0_native",
     "project_bbox_l1_to_l0_native",

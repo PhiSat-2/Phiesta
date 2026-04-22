@@ -1,7 +1,10 @@
-﻿insula_cache/
+﻿downloads/
+data/
+prepared_l0/
 docs/_build/
 pyrawph.egg-info/
 __pycache__/
-*.pyc
 .ipynb_checkpoints/
-data/
+*.pyc
+*.zip
+.venv_test/

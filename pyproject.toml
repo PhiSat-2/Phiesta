@@ -6,6 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "pyrawph"
 version = "0.0.1"
 requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "rasterio",
+    "tifffile",
+    "requests",
+    "termcolor",
+    "InsulaWorkflowClient",
+]
 
-[tool.setuptools]
-packages = ["pyrawph"]
+[tool.setuptools.packages.find]
+include = ["pyrawph", "pyrawph.*"]

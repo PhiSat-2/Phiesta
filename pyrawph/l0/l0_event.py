@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union, List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +11,16 @@ from ..utils.export_utils import export_to_tif as _export_to_tif, export_plain_t
 
 from .reader import load_l0_stack
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..remote.insula_client import InsulaClient
+    
+from pathlib import Path
+from .rawbin_converter import convert_l0_rawbin_inplace
+
+from ..remote.constants import DEFAULT_L0_DOWNLOAD_DIR, VM_L0_ROOT
+from ..remote.local_resolver import resolve_existing_product, find_product_folders_by_date
 
 BandSelector = Union[int, float, str]
 
@@ -27,6 +37,21 @@ _ALIAS_TO_WAVELENGTH = {
 
 
 
+def _looks_prepared_for_l0_event(product_folder: str | Path) -> bool:
+    """
+    A product is considered ready for L0_event.from_path(...) if:
+    - it has metadata(.json)
+    - and a raw/ directory with TIFFs
+    """
+    p = Path(product_folder)
+
+    has_metadata = (p / "metadata").exists() or (p / "metadata.json").exists()
+    raw_dir = p / "raw"
+    has_raw_tiffs = raw_dir.exists() and any(
+        x.is_file() and x.suffix.lower() in {".tif", ".tiff"} for x in raw_dir.iterdir()
+    )
+
+    return has_metadata and has_raw_tiffs
 
 @dataclass
 class L0_event:
@@ -114,7 +139,7 @@ class L0_event:
         plt.title(title or f"Band {band}")
         plt.show()
 
-    def plot_rgb(self, bands=(0, 2, 7), stretch=(2, 98), figsize=(8, 8), title=None):
+    def plot_rgb(self, bands=("RED", "GREEN", "BLUE"), stretch=(2, 98), figsize=(8, 8), title=None):
         """
         Display a quick RGB-like composite built from three selected bands.
 
@@ -196,6 +221,205 @@ class L0_event:
         """
         arr, meta = load_l0_stack(product_folder=product_folder, scene_id=scene_id, bands=bands)
         return cls(arr=arr, meta=meta, product_folder=product_folder, scene_id=scene_id, device=device)
+    
+    @classmethod
+    def from_insula_identifier(
+        cls,
+        client: InsulaClient,
+        ref_data_collection: str,
+        identifier: str,
+        keep_zip: bool = False,
+        skip_existing: bool = True,
+        force_redownload: bool = False,
+        scene_id: int = 0,
+        bands: Optional[Sequence[int]] = None,
+        device: str = "cpu",
+        convert: bool = True,
+        converter: Optional[Callable[..., Union[str, Path]]] = None,
+        converter_kwargs: Optional[Dict[str, Any]] = None,
+        dest_dir: str | Path | None = None,
+        local_fallback: bool = True,
+        vm_fallback: bool = False,
+        local_roots: Optional[List[str | Path]] = None,
+    ) -> Union["L0_event", Path]:
+        search_roots = []
+
+        if local_fallback:
+            search_roots.append(dest_dir or DEFAULT_L0_DOWNLOAD_DIR)
+
+        if vm_fallback:
+            search_roots.append(VM_L0_ROOT)
+
+        if local_roots:
+            search_roots.extend(local_roots)
+
+        existing = resolve_existing_product(
+            identifier=identifier,
+            roots=search_roots,
+        )
+
+        if existing is not None:
+            downloaded_folder = Path(existing)
+            feature_props = None
+        else:
+            feature = client.get_feature_by_identifier(
+                ref_data_collection=ref_data_collection,
+                identifier=identifier,
+            )
+
+            downloaded_folder = Path(
+                client.download_feature(
+                    feature,
+                    dest_dir=dest_dir or DEFAULT_L0_DOWNLOAD_DIR,
+                    extract=True,
+                    keep_zip=keep_zip,
+                    skip_existing=skip_existing,
+                    force_redownload=force_redownload,
+                )
+            )
+            feature_props = feature["properties"]
+
+        if not convert:
+            return downloaded_folder
+
+        if _looks_prepared_for_l0_event(downloaded_folder):
+            prepared_folder = downloaded_folder
+        else:
+            converter = converter or convert_l0_rawbin_inplace
+            converter_kwargs = converter_kwargs or {}
+            prepared_folder = Path(converter(downloaded_folder, **converter_kwargs))
+
+        event = cls.from_path(
+            product_folder=str(prepared_folder),
+            scene_id=scene_id,
+            bands=bands,
+            device=device,
+        )
+
+        event.meta["source"] = "local_or_vm" if feature_props is None else "insula"
+        event.meta["resolved_product_folder"] = str(downloaded_folder)
+        event.meta["prepared_product_folder"] = str(prepared_folder)
+        event.meta["insula_converted"] = True
+
+        if feature_props is not None:
+            event.meta["insula_filename"] = feature_props.get("filename")
+            event.meta["insula_product_identifier"] = feature_props.get("productIdentifier")
+            event.meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
+            event.meta["insula_platform_url"] = feature_props.get("platformUrl")
+
+        return event
+
+
+    @classmethod
+    def from_insula_search(
+        cls,
+        client: "InsulaClient",
+        ref_data_collection: str,
+        page: int = 0,
+        results_per_page: int = 20,
+        feature_index: int = 0,
+        keep_zip: bool = False,
+        skip_existing: bool = True,
+        force_redownload: bool = False,
+        scene_id: int = 0,
+        bands: Optional[Sequence[int]] = None,
+        device: str = "cpu",
+        convert: bool = True,
+        converter: Optional[Callable[..., Union[str, Path]]] = None,
+        converter_kwargs: Optional[Dict[str, Any]] = None,
+        dest_dir: str | Path | None = None,
+        **search_filters,
+    ) -> Union["L0_event", Path]:
+        """
+        Search remote PHISAT-2 L0 products on Insula, download one result, and
+        optionally convert it into a PyRawPh-readable local product.
+
+        This is the low-level remote-search constructor. For high-level usage,
+        prefer `client.search_l0(...)` followed by `client.load_l0(...)`.
+
+        Args:
+            client: Connected Insula client.
+            ref_data_collection: Insula REF_DATA collection id.
+            page: Search page index.
+            results_per_page: Number of results requested from Insula.
+            feature_index: Index inside the returned page.
+            keep_zip: If True, keep the downloaded zip archive on disk.
+            skip_existing: If True, reuse an already extracted local copy when possible.
+            force_redownload: If True, ignore any local copy and download again.
+            scene_id: Scene id to load from the downloaded product.
+            bands: Optional subset of L0 band indices to load.
+            device: Device used by `as_tensor()`.
+            convert: If True, convert `raw.bin` into raw TIFF bands before loading.
+            converter: Optional custom converter callable.
+            converter_kwargs: Optional kwargs forwarded to the converter.
+            dest_dir: Optional destination directory for downloads.
+            **search_filters: Additional Insula search parameters.
+
+        Returns:
+            If `convert=True`, a loaded `L0_event`.
+            If `convert=False`, the downloaded/extracted product folder as a `Path`.
+
+        Raises:
+            ValueError: If no result is found.
+            IndexError: If `feature_index` is out of range.
+        """
+        data = client.search_ref_data(
+            ref_data_collection=ref_data_collection,
+            page=page,
+            results_per_page=results_per_page,
+            **search_filters,
+        )
+
+        features = data.get("features", [])
+        if not features:
+            raise ValueError("No feature found for this Insula search.")
+
+        if not (0 <= feature_index < len(features)):
+            raise IndexError(
+                f"feature_index={feature_index} out of range for {len(features)} result(s)."
+            )
+
+        feature = features[feature_index]
+
+        downloaded_folder = Path(
+            client.download_feature(
+                feature,
+                dest_dir=dest_dir or DEFAULT_L0_DOWNLOAD_DIR,
+                extract=True,
+                keep_zip=keep_zip,
+                skip_existing=skip_existing,
+                force_redownload=force_redownload,
+            )
+        )
+
+        if not convert:
+            return downloaded_folder
+
+        if _looks_prepared_for_l0_event(downloaded_folder):
+            prepared_folder = downloaded_folder
+        else:
+            converter = converter or convert_l0_rawbin_inplace
+            converter_kwargs = converter_kwargs or {}
+            prepared_folder = Path(converter(downloaded_folder, **converter_kwargs))
+
+        event = cls.from_path(
+            product_folder=str(prepared_folder),
+            scene_id=scene_id,
+            bands=bands,
+            device=device,
+        )
+
+        props = feature["properties"]
+        event.meta["source"] = "insula"
+        event.meta["resolved_product_folder"] = str(downloaded_folder)
+        event.meta["prepared_product_folder"] = str(prepared_folder)
+        event.meta["insula_filename"] = props.get("filename")
+        event.meta["insula_product_identifier"] = props.get("productIdentifier")
+        event.meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
+        event.meta["insula_platform_url"] = props.get("platformUrl")
+        event.meta["insula_converted"] = True
+
+        return event
 
     def as_numpy(self) -> np.ndarray:
         """
@@ -355,16 +579,14 @@ class L0_event:
         idx = self._resolve_band_index(band)
         return self.arr[idx]
 
-    def rgb(self, bands=(0, 2, 7), stretch=(2, 98), arr: Optional[np.ndarray] = None) -> np.ndarray:
-        """
-        Debug RGB-like composite for L0.
-        Default is (band0, band2, band7), not a guaranteed physical true-color.
-        """
+    def rgb(self, bands=("RED", "GREEN", "BLUE"), stretch=(2, 98), arr: Optional[np.ndarray] = None) -> np.ndarray:
         src = self.arr if arr is None else np.asarray(arr)
         if src.ndim != 3:
             raise ValueError(f"rgb expects (C,H,W), got {src.shape}")
 
-        rgb = np.stack([src[b] for b in bands], axis=-1).astype(np.float32)
+        idxs = [self._resolve_band_index(b) for b in bands]
+        rgb = np.stack([src[i] for i in idxs], axis=-1).astype(np.float32)
+
         lo = np.percentile(rgb, stretch[0], axis=(0, 1), keepdims=True)
         hi = np.percentile(rgb, stretch[1], axis=(0, 1), keepdims=True)
         rgb = np.clip((rgb - lo) / np.maximum(hi - lo, 1e-6), 0.0, 1.0)

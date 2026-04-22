@@ -5,11 +5,14 @@ from getpass import getpass
 
 from InsulaWorkflowClient import InsulaOpenIDConnect
 
-from pyrawph.remote import InsulaClient
+from pyrawph.remote import (
+    InsulaClient,
+    PHISAT2_BASE_URL,
+    PHISAT2_L0_COLLECTION,
+    PHISAT2_L1_COLLECTION,
+)
 
 
-PHISAT2_L1_COLLECTION = "phisat24e55ba83dd304ea9b018b65e9b17a7de"
-BASE_URL = "https://phisat2.insula.earth"
 
 
 def build_auth():
@@ -34,7 +37,7 @@ def main():
     insula_auth = build_auth()
     client = InsulaClient(
         insula_auth=insula_auth,
-        base_url=BASE_URL,
+        base_url=PHISAT2_BASE_URL,
         cache_dir=dest_dir,
     )
 

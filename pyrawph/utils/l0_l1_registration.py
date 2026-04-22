@@ -3,11 +3,21 @@ from __future__ import annotations
 from typing import Dict, Any, Tuple, List
 
 import numpy as np
-import torch
-import torch.nn.functional as F
+try:
+    import torch
+    import torch.nn.functional as F
+except Exception:  # pragma: no cover
+    torch = None
+    F = None
 
 
-
+def _require_torch() -> None:
+    if torch is None or F is None:
+        raise ImportError(
+            "Torch is required for L0/L1 registration utilities. "
+            "Install it separately, e.g. `pip install torch`."
+        )
+    
 def prep_for_phase_corr(img: np.ndarray) -> torch.Tensor:
     """
     Prepare one 2D image for phase-correlation-based registration.
@@ -22,6 +32,7 @@ def prep_for_phase_corr(img: np.ndarray) -> torch.Tensor:
     Returns:
         A torch tensor with shape `(1, 1, H, W)`.
     """
+    _require_torch()
     x = torch.tensor(img, dtype=torch.float32)
     x = (x - x.mean()) / (x.std() + 1e-6)
     return x.unsqueeze(0).unsqueeze(0)  # (1,1,H,W)
@@ -44,6 +55,7 @@ def phase_correlation_shift(src, tgt, eps=1e-8, max_shifts=None):
         A tensor of shape `(B, 2)` containing shifts `(dy, dx)` to apply to `tgt`
         so that it aligns with `src`.
     """
+    _require_torch()
     B, C, H, W = src.shape
 
     fs = torch.fft.rfft2(src)
@@ -81,6 +93,7 @@ def warp_by_shift(img, shift):
     Returns:
         A tensor with the same shape as `img`, shifted according to `shift`.
     """
+    _require_torch()
     B, C, H, W = img.shape
     dy = shift[:, 0]
     dx = shift[:, 1]
@@ -115,6 +128,7 @@ def warp_np_by_shift(img: np.ndarray, shift_dy_dx: np.ndarray) -> np.ndarray:
     Returns:
         The shifted image as a 2D NumPy array.
     """
+    _require_torch()
     t = torch.tensor(img, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
     shift_dy_dx = np.asarray(shift_dy_dx, dtype=np.float32)
     s = torch.from_numpy(shift_dy_dx[None, :])

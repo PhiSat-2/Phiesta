@@ -12,6 +12,8 @@ try:
 except Exception:  
     torch = None 
 
+from pathlib import Path
+
 
 try:
     from termcolor import colored
@@ -25,10 +27,21 @@ from ..utils.export_utils import export_to_tif as _export_to_tif
 
 from rasterio.windows import Window, bounds as window_bounds, transform as window_transform
 
-from ..remote.insula_client import InsulaClient
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..remote.insula_client import InsulaClient
+
+from ..remote.constants import DEFAULT_L1_DOWNLOAD_DIR, VM_L1_ROOT
+from ..remote.local_resolver import resolve_existing_product
+
+from .normalize import normalize_l1_product_layout
 
 
 BandSpec = Union[int, str, float]
+
+
+
 
 
 def _try_parse_product_times(product_folder: str) -> Tuple[Optional[str], Optional[str]]:
@@ -86,6 +99,22 @@ class L1_event:
         "NIR": 842,
     }
 
+    @property
+    def meta(self) -> Dict[str, Any]:
+        return self._meta
+
+    @property
+    def product_folder(self) -> str:
+        return self._product_folder
+
+    @property
+    def scene_id(self) -> int:
+        return self._scene_id
+
+    @property
+    def device(self) -> str:
+        return self._device
+
     def __init__(
         self,
         arr: np.ndarray,
@@ -140,33 +169,15 @@ class L1_event:
         as_float32: bool = True,
         verbose: bool = True,
         device: str = "cpu",
+        normalize_layout: bool = True,
     ) -> "L1_event":
-        
-        """
-        Create an :class:`L1_event` from a local ΦSat-2 product folder.
-
-        This class method loads one scene from disk using the ΦSat-2 L1 reader,
-        builds the underlying `(C, H, W)` array, and attaches the corresponding
-        metadata dictionary.
-
-        Args:
-            product_folder: Path to the local ΦSat-2 product folder.
-            scene_id: Scene index to load from the product.
-            product_kind: Product variant to load, for example `"BC"`.
-            multiband: Whether to read the product as a multiband array.
-            bands: Optional subset of band indices to read. If `None`, all available
-                bands are loaded.
-            as_float32: Whether to cast the loaded array to `float32`.
-            verbose: If `True`, print a short loading message.
-            device: Target device used when converting the event to a torch tensor.
-
-        Returns:
-            A new :class:`L1_event` instance initialized from the requested product.
-
-        Raises:
-            FileNotFoundError: If the product folder or required files are missing.
-            ValueError: If the requested scene or product configuration is invalid.
-        """
+        if normalize_layout:
+            normalize_l1_product_layout(
+                product_folder=product_folder,
+                scene_id=scene_id,
+                product_kind=product_kind,
+                overwrite=False,
+            )
 
         if verbose:
             print("[PyRawPh] Loading ΦSat-2 L1 from:", product_folder)
@@ -191,10 +202,10 @@ class L1_event:
     @classmethod
     def from_insula_search(
         cls,
-        client: InsulaClient,
+        client: "InsulaClient",
         ref_data_collection: str,
         page: int = 0,
-        results_per_page: int = 1,
+        results_per_page: int = 20,
         feature_index: int = 0,
         keep_zip: bool = False,
         skip_existing: bool = True,
@@ -206,8 +217,42 @@ class L1_event:
         as_float32: bool = True,
         verbose: bool = True,
         device: str = "cpu",
+        dest_dir: str | Path | None = None,
         **search_filters,
     ) -> "L1_event":
+        """
+        Search remote PHISAT-2 L1 products on Insula, download one result, and load it.
+
+        This is a low-level constructor. For date-based workflows, prefer:
+        1) `client.search_l1(date=...)`
+        2) `client.load_l1(identifier=...)`
+
+        Args:
+            client: Connected Insula client.
+            ref_data_collection: Insula REF_DATA collection id.
+            page: Search page index.
+            results_per_page: Number of results requested from Insula.
+            feature_index: Index inside the returned page.
+            keep_zip: If True, keep the downloaded zip archive on disk.
+            skip_existing: If True, reuse an already extracted local copy when possible.
+            force_redownload: If True, ignore any local copy and download again.
+            scene_id: Scene id to load from the downloaded product.
+            product_kind: Product variant, typically `"BC"`.
+            multiband: If True, read the canonical multiband TIFF.
+            bands: Optional subset of L1 band indices to load.
+            as_float32: If True, cast the array to float32.
+            verbose: If True, print a loading message.
+            device: Device used by `as_tensor()`.
+            dest_dir: Optional destination directory for downloads.
+            **search_filters: Additional Insula search parameters.
+
+        Returns:
+            A loaded `L1_event`.
+
+        Raises:
+            ValueError: If no result is found.
+            IndexError: If `feature_index` is out of range.
+        """
         data = client.search_ref_data(
             ref_data_collection=ref_data_collection,
             page=page,
@@ -225,13 +270,16 @@ class L1_event:
             )
 
         feature = features[feature_index]
+
         product_folder = client.download_feature(
             feature,
+            dest_dir=dest_dir or DEFAULT_L1_DOWNLOAD_DIR,
             extract=True,
             keep_zip=keep_zip,
             skip_existing=skip_existing,
             force_redownload=force_redownload,
         )
+        feature_props = feature["properties"]
 
         event = cls.from_path(
             product_folder=str(product_folder),
@@ -244,12 +292,13 @@ class L1_event:
             device=device,
         )
 
-        props = feature["properties"]
         event._meta["source"] = "insula"
-        event._meta["insula_filename"] = props.get("filename")
-        event._meta["insula_product_identifier"] = props.get("productIdentifier")
-        event._meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
-        event._meta["insula_platform_url"] = props.get("platformUrl")
+        event._meta["resolved_product_folder"] = str(product_folder)
+        event._meta["insula_filename"] = feature_props.get("filename")
+        event._meta["insula_product_identifier"] = feature_props.get("productIdentifier")
+        event._meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
+        event._meta["insula_platform_url"] = feature_props.get("platformUrl")
+
         return event
 
     @classmethod
@@ -268,19 +317,51 @@ class L1_event:
         as_float32: bool = True,
         verbose: bool = True,
         device: str = "cpu",
+        dest_dir: str | Path | None = None,
+        local_fallback: bool = True,
+        vm_fallback: bool = False,
+        local_roots: Optional[List[str | Path]] = None,
     ) -> "L1_event":
-        feature = client.get_feature_by_identifier(
-            ref_data_collection=ref_data_collection,
+        """
+        Resolution order:
+        1) local/project data dir
+        2) VM shared dir (if vm_fallback=True)
+        3) Insula download
+        """
+        search_roots = []
+
+        if local_fallback:
+            search_roots.append(dest_dir or DEFAULT_L1_DOWNLOAD_DIR)
+
+        if vm_fallback:
+            search_roots.append(VM_L1_ROOT)
+
+        if local_roots:
+            search_roots.extend(local_roots)
+
+        existing = resolve_existing_product(
             identifier=identifier,
+            roots=search_roots,
         )
 
-        product_folder = client.download_feature(
-            feature,
-            extract=True,
-            keep_zip=keep_zip,
-            skip_existing=skip_existing,
-            force_redownload=force_redownload,
-        )
+        if existing is not None:
+            product_folder = existing
+            feature_props = None
+        else:
+            feature = client.get_feature_by_identifier(
+                ref_data_collection=ref_data_collection,
+                identifier=identifier,
+            )
+
+            product_folder = client.download_feature(
+                feature,
+                dest_dir=dest_dir or DEFAULT_L1_DOWNLOAD_DIR,
+                extract=True,
+                keep_zip=keep_zip,
+                skip_existing=skip_existing,
+                force_redownload=force_redownload,
+            )
+            feature_props = feature["properties"]
 
         event = cls.from_path(
             product_folder=str(product_folder),
@@ -293,12 +374,15 @@ class L1_event:
             device=device,
         )
 
-        props = feature["properties"]
-        event._meta["source"] = "insula"
-        event._meta["insula_filename"] = props.get("filename")
-        event._meta["insula_product_identifier"] = props.get("productIdentifier")
-        event._meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
-        event._meta["insula_platform_url"] = props.get("platformUrl")
+        event._meta["source"] = "local_or_vm" if feature_props is None else "insula"
+        event._meta["resolved_product_folder"] = str(product_folder)
+
+        if feature_props is not None:
+            event._meta["insula_filename"] = feature_props.get("filename")
+            event._meta["insula_product_identifier"] = feature_props.get("productIdentifier")
+            event._meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
+            event._meta["insula_platform_url"] = feature_props.get("platformUrl")
+
         return event
 
     # basic getters

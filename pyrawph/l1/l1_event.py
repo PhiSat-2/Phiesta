@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 from datetime import datetime
+from sys import path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -34,8 +35,39 @@ if TYPE_CHECKING:
 
 from ..remote.constants import DEFAULT_L1_DOWNLOAD_DIR, VM_L1_ROOT
 from ..remote.local_resolver import resolve_existing_product
+from ..remote.catalog_geometry import (
+    enrich_meta_with_insula_feature,
+    get_catalog_corners as _get_catalog_corners,
+    get_catalog_center as _get_catalog_center,
+    get_catalog_polygon as _get_catalog_polygon,
+    format_catalog_geo as _format_catalog_geo,
+    print_catalog_geo as _print_catalog_geo,
+)
+
+from ..georef.catalog_overlay import (
+    ensure_nearest_valid_cdse_mosaic_for_catalog as _ensure_nearest_valid_cdse_mosaic_for_catalog,
+    show_catalog_geo_in_sentinel as _show_catalog_geo_in_sentinel,
+    show_coordinates_in_sentinel as _show_coordinates_in_sentinel,
+    compare_catalog_rectified as _compare_catalog_rectified,
+)
+
+from ..utils.display import (
+    prepare_event_display_image as _prepare_event_display_image,
+    show_prepared_display as _show_prepared_display,
+    format_event_display_title as _format_event_display_title,
+)
+from ..utils.l0_l1_registration import (
+    register_event_bands_to_master as _register_event_bands_to_master,
+)
 
 from .normalize import normalize_l1_product_layout
+
+from ..utils.stats import (
+    compute_band_stats as _compute_band_stats,
+    plot_value_distribution as _plot_value_distribution,
+)
+
+from ..triplets.builder import build_sentinel_triplet as _build_sentinel_triplet
 
 
 BandSpec = Union[int, str, float]
@@ -114,6 +146,345 @@ class L1_event:
     @property
     def device(self) -> str:
         return self._device
+    
+    @property
+    def product_kind(self) -> str:
+        return self._product_kind
+    
+    def build_sentinel_triplet(self, **kwargs):
+        """
+        Build a Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet.
+
+        This is the high-level user-facing entry point. The current implementation
+        initializes the triplet workspace and QC metadata; Sentinel sourcing,
+        simulation, and alignment are progressively added in the triplet pipeline.
+        """
+        return _build_sentinel_triplet(self, **kwargs)
+    
+    def get_catalog_corners(self, order: str = "latlon"):
+        return _get_catalog_corners(self, order=order)
+
+    def get_catalog_center(self, order: str = "latlon"):
+        return _get_catalog_center(self, order=order)
+
+    def get_catalog_polygon(self, order: str = "latlon", closed: bool = True):
+        return _get_catalog_polygon(self, order=order, closed=closed)
+
+    def format_catalog_geo(self, order: str = "latlon", decimals: int = 6) -> str:
+        return _format_catalog_geo(self, order=order, decimals=decimals)
+
+    def print_catalog_geo(self, order: str = "latlon", decimals: int = 6) -> None:
+        _print_catalog_geo(self, order=order, decimals=decimals)
+
+    def show_catalog_geo_in_sentinel(self, cache_dir: str | Path = "georef_cache", **kwargs):
+        return _show_catalog_geo_in_sentinel(self, cache_dir=cache_dir, **kwargs)
+
+    def show_coordinates_in_sentinel(
+        self,
+        cache_dir: str | Path = "georef_cache",
+        **kwargs,
+    ):
+        """
+        Show the Insula catalog footprint on a Sentinel-2 mosaic.
+
+        If no mosaic_path is provided, PyRawPh automatically builds or reuses one.
+        """
+        if "mosaic_path" not in kwargs:
+            cached = self._meta.get("sentinel_mosaic_path")
+            if cached is not None:
+                kwargs["mosaic_path"] = cached
+
+        result = _show_coordinates_in_sentinel(
+            self,
+            cache_dir=cache_dir,
+            **kwargs,
+        )
+
+        mosaic = result.get("mosaic")
+        if mosaic is not None and getattr(mosaic, "source_path", None) is not None:
+            self._meta["sentinel_mosaic_path"] = str(mosaic.source_path)
+
+        return result
+    
+    def compare_catalog_to_phisat(self, cache_dir: str | Path = "georef_cache", **kwargs):
+        """
+        Legacy compatibility alias.
+
+        Prefer compare_catalog_rectified(...) for new code.
+        """
+        return _compare_catalog_rectified(self, cache_dir=cache_dir, **kwargs)
+    
+    def compare_catalog_rectified(
+        self,
+        cache_dir: str | Path = "georef_cache",
+        **kwargs,
+    ):
+        """
+        Compare PhiSat-2 with a rectified Sentinel-2 crop from the catalog footprint.
+
+        If no mosaic_path is provided, PyRawPh automatically builds or reuses one.
+        """
+        if "mosaic_path" not in kwargs:
+            cached = self._meta.get("sentinel_mosaic_path")
+            if cached is not None:
+                kwargs["mosaic_path"] = cached
+
+        result = _compare_catalog_rectified(
+            self,
+            cache_dir=cache_dir,
+            **kwargs,
+        )
+
+        mosaic_path = result.get("mosaic_path")
+        if mosaic_path is not None:
+            self._meta["sentinel_mosaic_path"] = str(mosaic_path)
+
+        return result
+    
+
+    def band_stats(
+        self,
+        bands="all",
+        percentiles=(0, 1, 2, 5, 50, 95, 98, 99, 100),
+        sample=500_000,
+        random_state=0,
+    ):
+        """
+        Compute raw-value statistics for selected bands.
+        """
+        return _compute_band_stats(
+            self,
+            bands=bands,
+            percentiles=percentiles,
+            sample=sample,
+            random_state=random_state,
+        )
+
+
+    def plot_distribution(
+        self,
+        bands="all",
+        bins=256,
+        sample=500_000,
+        log_y=True,
+        percentiles=(1, 2, 50, 98, 99),
+        hist_range_percentiles=(0.1, 99.9),
+        random_state=0,
+        figsize=(12, 7),
+        title=None,
+        out_png=None,
+    ):
+        """
+        Plot raw-value distributions for selected bands.
+        """
+        return _plot_value_distribution(
+            self,
+            bands=bands,
+            bins=bins,
+            sample=sample,
+            log_y=log_y,
+            percentiles=percentiles,
+            hist_range_percentiles=hist_range_percentiles,
+            random_state=random_state,
+            figsize=figsize,
+            title=title,
+            out_png=out_png,
+        )
+
+    def _resolve_band_index_for_registration(self, band):
+        """
+        Resolve a band selector to an integer index for registration purposes.
+        """
+        return self._resolve_band(band)
+
+
+    def _registered_for_display(
+        self,
+        master_band="RED",
+        max_shifts=(80, 80),
+        force: bool = False,
+    ):
+        """
+        Return a band-registered copy of this event for display.
+        """
+        if not hasattr(self, "_display_registered_cache"):
+            self._display_registered_cache = {}
+
+        cache_key = f"master={master_band}|max_shifts={tuple(max_shifts)}"
+
+        if not force and cache_key in self._display_registered_cache:
+            return self._display_registered_cache[cache_key]
+
+        master_idx = self._resolve_band_index_for_registration(master_band)
+
+        registered = _register_event_bands_to_master(
+            self,
+            master_band=master_idx,
+            max_shifts=max_shifts,
+        )
+
+        self._display_registered_cache[cache_key] = registered
+        return registered
+    
+    def with_array(
+        self,
+        arr: np.ndarray,
+        meta_updates: dict | None = None,
+    ) -> "L1_event":
+        """
+        Return a new L1_event with the same metadata but a different array.
+
+        Useful for derived products such as display-registered cubes.
+        The original event is not modified.
+        """
+        arr = np.asarray(arr)
+
+        meta = dict(self._meta)
+        if meta_updates:
+            meta.update(meta_updates)
+
+        if arr.ndim == 3:
+            meta["count"] = int(arr.shape[0])
+            meta["height"] = int(arr.shape[1])
+            meta["width"] = int(arr.shape[2])
+        elif arr.ndim == 2:
+            meta["count"] = 1
+            meta["height"] = int(arr.shape[0])
+            meta["width"] = int(arr.shape[1])
+        else:
+            raise ValueError(f"Expected 2D or 3D array, got shape {arr.shape}")
+
+        meta["dtype"] = str(arr.dtype)
+
+        product_folder = getattr(self, "product_folder", meta.get("path", None))
+        scene_id = getattr(self, "scene_id", meta.get("scene_id", 0))
+        product_kind = getattr(
+            self,
+            "product_kind",
+            meta.get("product_kind", meta.get("kind", "BC")),
+        )
+
+        return L1_event(
+            arr=arr,
+            meta=meta,
+            product_folder=str(product_folder) if product_folder is not None else "",
+            scene_id=scene_id,
+            product_kind=product_kind,
+        )
+
+
+    def show(
+        self,
+        bands=("RED", "GREEN", "BLUE"),
+        normalize: bool = True,
+        normalization: str = "percentile",
+        percentiles: tuple[float, float] = (2, 98),
+        per_band: bool = True,
+        registered: bool = False,
+        registration_master="RED",
+        max_shifts=(80, 80),
+        force_registration: bool = False,
+        interpolation: str = "nearest",
+        figsize=(8, 8),
+        title: str | None = None,
+        out_png: str | None = None,
+    ):
+        """
+        Display a PhiSat-2 event.
+
+        Args:
+            bands:
+                - one selector, e.g. "NIR" or 7 -> grayscale
+                - three selectors, e.g. ("RED", "GREEN", "BLUE") -> RGB
+                - "all" -> all bands separately
+            normalize: Whether to normalize values for display.
+            normalization: "percentile", "minmax", "zscore", or "none".
+            percentiles: Percentiles used for percentile normalization.
+            per_band: If True, normalize each displayed band/channel independently.
+            registered: If True, register all bands to `registration_master` before display.
+            registration_master: Master band used for display registration.
+            max_shifts: Maximum allowed band-to-band registration shift.
+            force_registration: Recompute registration even if cached.
+            interpolation: Matplotlib display interpolation.
+            figsize: Figure size.
+            title: Optional title.
+            out_png: Optional output PNG path.
+        """
+        ev = self
+        if registered:
+            ev = self._registered_for_display(
+                master_band=registration_master,
+                max_shifts=max_shifts,
+                force=force_registration,
+            )
+
+        prepared = _prepare_event_display_image(
+            ev,
+            bands=bands,
+            normalize=normalize,
+            normalization=normalization,
+            percentiles=percentiles,
+            per_band=per_band,
+        )
+
+        if title is None:
+            title = _format_event_display_title(
+                level="L1",
+                prepared=prepared,
+                registered=registered,
+                normalize=normalize,
+                normalization=normalization,
+                percentiles=percentiles,
+                per_band=per_band,
+                registration_master=registration_master,
+            )
+
+        return _show_prepared_display(
+            prepared,
+            figsize=figsize,
+            title=title,
+            interpolation=interpolation,
+            out_png=out_png,
+        )
+
+
+    def show_rgb(self, bands=("RED", "GREEN", "BLUE"), **kwargs):
+        """
+        Display an RGB composite.
+        """
+        return self.show(bands=bands, **kwargs)
+
+
+    def show_band(self, band, **kwargs):
+        """
+        Display one band in grayscale.
+        """
+        return self.show(bands=band, **kwargs)
+
+
+    def show_all_bands(self, **kwargs):
+        """
+        Display all bands separately.
+        """
+        return self.show(bands="all", **kwargs)
+    
+    def ensure_sentinel_mosaic(
+        self,
+        cache_dir: str | Path = "georef_cache",
+        preset: str = "balanced",
+        **kwargs,
+    ):
+        """
+        Build or reuse a valid Sentinel-2 mosaic around the catalog footprint.
+        """
+        path = _ensure_nearest_valid_cdse_mosaic_for_catalog(
+            self,
+            cache_dir=cache_dir,
+            preset=preset,
+            **kwargs,
+        )
+        self._meta["sentinel_mosaic_path"] = str(path)
+        return path
 
     def __init__(
         self,
@@ -279,8 +650,6 @@ class L1_event:
             skip_existing=skip_existing,
             force_redownload=force_redownload,
         )
-        feature_props = feature["properties"]
-
         event = cls.from_path(
             product_folder=str(product_folder),
             scene_id=scene_id,
@@ -294,10 +663,12 @@ class L1_event:
 
         event._meta["source"] = "insula"
         event._meta["resolved_product_folder"] = str(product_folder)
-        event._meta["insula_filename"] = feature_props.get("filename")
-        event._meta["insula_product_identifier"] = feature_props.get("productIdentifier")
-        event._meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
-        event._meta["insula_platform_url"] = feature_props.get("platformUrl")
+
+        enrich_meta_with_insula_feature(
+            meta=event._meta,
+            feature=feature,
+            ref_data_collection=ref_data_collection,
+        )
 
         return event
 
@@ -321,6 +692,7 @@ class L1_event:
         local_fallback: bool = True,
         vm_fallback: bool = False,
         local_roots: Optional[List[str | Path]] = None,
+        attach_catalog_geo: bool = True,
     ) -> "L1_event":
         """
         Resolution order:
@@ -344,9 +716,18 @@ class L1_event:
             roots=search_roots,
         )
 
+        feature = None
+
         if existing is not None:
             product_folder = existing
             feature_props = None
+
+            if attach_catalog_geo:
+                feature = client.get_feature_by_identifier(
+                    ref_data_collection=ref_data_collection,
+                    identifier=identifier,
+                )
+                feature_props = feature["properties"]
         else:
             feature = client.get_feature_by_identifier(
                 ref_data_collection=ref_data_collection,
@@ -378,10 +759,11 @@ class L1_event:
         event._meta["resolved_product_folder"] = str(product_folder)
 
         if feature_props is not None:
-            event._meta["insula_filename"] = feature_props.get("filename")
-            event._meta["insula_product_identifier"] = feature_props.get("productIdentifier")
-            event._meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
-            event._meta["insula_platform_url"] = feature_props.get("platformUrl")
+            enrich_meta_with_insula_feature(
+                meta=event._meta,
+                feature=feature,
+                ref_data_collection=ref_data_collection,
+            )
 
         return event
 
@@ -436,15 +818,12 @@ class L1_event:
     def get_wavelengths(self) -> List[Optional[int]]:
         """
         Return the list of band center wavelengths in nanometers.
-
-        The values are read from the `"band_wavelength_nm"` entry of the metadata.
-        If no wavelength information is available, an empty list is returned.
-
-        Returns:
-            A list of wavelengths in nanometers, or an empty list if unavailable.
         """
-        w = self._meta.get("band_wavelength_nm", None)
-        return list(w) if isinstance(w, (list, tuple)) else []
+        for key in ("band_wavelength_nm", "wavelengths_nm", "band_wavelengths_nm"):
+            w = self._meta.get(key, None)
+            if isinstance(w, (list, tuple)):
+                return list(w)
+        return []
 
     def _resolve_band(self, band: BandSpec) -> int:
         """

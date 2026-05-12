@@ -7,6 +7,7 @@ import shutil
 import zipfile
 
 import requests
+import re
 
 from ..sys_cfg import DATA_PATH
 from .constants import (
@@ -18,13 +19,46 @@ from .constants import (
     VM_L1_ROOT,
 )
 
+from .catalog_geometry import (
+    catalog_geo_from_feature,
+    bbox_to_wkt,
+    point_buffer_to_wkt,
+)
+
 @dataclass
 class InsulaPaths:
     zip_path: Path
     extract_dir: Path
     product_folder: Path
 
+def _normalize_identifier_query(identifier: str) -> str:
+    s = str(identifier).strip()
+    if s.endswith(".zip"):
+        s = s[:-4]
+    return s
 
+
+def _extract_acq_id(text: str | None) -> Optional[str]:
+    if text is None:
+        return None
+    s = str(text)
+    m = re.search(r"PHISAT-2_L[01]_(\d+)_", s)
+    if m is None:
+        return None
+    out = m.group(1).lstrip("0")
+    return out if out else "0"
+
+def _day_bounds_utc(date_str: str) -> tuple[str, str]:
+    """
+    Convert YYYY-MM-DD into a UTC day interval.
+
+    Returns:
+        ("YYYY-MM-DDT00:00:00Z", "YYYY-MM-DDT23:59:59Z")
+    """
+    d = str(date_str).strip()
+    if len(d) != 10:
+        raise ValueError("date must be in YYYY-MM-DD format")
+    return (f"{d}T00:00:00Z", f"{d}T23:59:59Z")
 
 class InsulaClient:
     """
@@ -524,16 +558,68 @@ class InsulaClient:
         ref_data_collection: str,
         identifier: str,
     ) -> Dict[str, Any]:
+        """
+        Retrieve exactly one REF_DATA feature matching the requested identifier.
+
+        Accepted user inputs:
+        - bare acquisition id, e.g. "4520"
+        - product name without .zip
+        - full productIdentifier / filename
+        """
+        q = _normalize_identifier_query(identifier)
+        q_acq = _extract_acq_id(q)
+        if q_acq is None and q.isdigit():
+            q_acq = q.lstrip("0") or "0"
+
         data = self.search_ref_data(
             ref_data_collection=ref_data_collection,
             page=0,
-            results_per_page=20,
-            identifier=identifier,
+            results_per_page=100,
+            identifier=q,
         )
         features = data.get("features", [])
         if not features:
             raise ValueError(f"No feature found for identifier={identifier!r}")
-        return features[0]
+
+        exact = []
+
+        for feat in features:
+            props = feat.get("properties", {})
+
+            pid = props.get("productIdentifier")
+            fn = props.get("filename")
+
+            pid_n = _normalize_identifier_query(pid) if pid else None
+            fn_n = _normalize_identifier_query(fn) if fn else None
+
+            pid_acq = _extract_acq_id(pid)
+            fn_acq = _extract_acq_id(fn)
+
+            candidates = {x for x in [pid_n, fn_n, pid_acq, fn_acq] if x}
+
+            if q in candidates or (q_acq is not None and q_acq in candidates):
+                exact.append(feat)
+
+        if len(exact) == 1:
+            return exact[0]
+
+        if len(exact) == 0:
+            sample = [
+                f.get("properties", {}).get("productIdentifier")
+                for f in features[:10]
+            ]
+            raise ValueError(
+                f"No exact feature match found for identifier={identifier!r}. "
+                f"Top search results were: {sample}"
+            )
+
+        sample = [
+            f.get("properties", {}).get("productIdentifier")
+            for f in exact[:10]
+        ]
+        raise ValueError(
+            f"Multiple exact feature matches found for identifier={identifier!r}: {sample}"
+        )
 
     def _paths_from_feature(
         self,
@@ -624,3 +710,254 @@ class InsulaClient:
         if len(children) == 1 and children[0].is_dir():
             return children[0]
         return paths.extract_dir
+    
+    def get_catalog_geo(
+        self,
+        ref_data_collection: str,
+        identifier: str,
+    ) -> Dict[str, Any]:
+        """
+        Return the lightweight catalog geometry object for one Insula feature.
+        """
+        feature = self.get_feature_by_identifier(
+            ref_data_collection=ref_data_collection,
+            identifier=identifier,
+        )
+        return catalog_geo_from_feature(
+            feature=feature,
+            ref_data_collection=ref_data_collection,
+        )
+
+
+    def get_l0_catalog_geo(self, identifier: str) -> Dict[str, Any]:
+        """
+        Convenience wrapper for PHISAT-2 L0 catalog geometry.
+        """
+        return self.get_catalog_geo(
+            ref_data_collection=PHISAT2_L0_COLLECTION,
+            identifier=identifier,
+        )
+
+
+    def get_l1_catalog_geo(self, identifier: str) -> Dict[str, Any]:
+        """
+        Convenience wrapper for PHISAT-2 L1 catalog geometry.
+        """
+        return self.get_catalog_geo(
+            ref_data_collection=PHISAT2_L1_COLLECTION,
+            identifier=identifier,
+        )
+    
+    def search_l1_in_aoi(
+        self,
+        aoi_wkt: str,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L1 products intersecting a given AOI.
+
+        Args:
+            aoi_wkt: AOI expressed as a WKT polygon string in lon/lat order.
+            date: Optional shortcut for a whole UTC day in YYYY-MM-DD format.
+            product_date_start: Optional explicit UTC start datetime.
+            product_date_end: Optional explicit UTC end datetime.
+            page: Page index.
+            results_per_page: Requested page size.
+            **extra_params: Additional Insula search parameters.
+
+        Returns:
+            A list of Insula feature dictionaries.
+
+        Raises:
+            ValueError: If both `date` and explicit date bounds are provided.
+        """
+        if date is not None and (product_date_start is not None or product_date_end is not None):
+            raise ValueError(
+                "Use either `date=...` or (`product_date_start`, `product_date_end`), not both."
+            )
+
+        if date is not None:
+            product_date_start, product_date_end = _day_bounds_utc(date)
+
+        params: Dict[str, Any] = {
+            "aoi": aoi_wkt,
+        }
+        if product_date_start is not None:
+            params["productDateStart"] = product_date_start
+        if product_date_end is not None:
+            params["productDateEnd"] = product_date_end
+        params.update(extra_params)
+
+        data = self.search_ref_data(
+            ref_data_collection=PHISAT2_L1_COLLECTION,
+            page=page,
+            results_per_page=results_per_page,
+            **params,
+        )
+        return data.get("features", [])
+
+
+    def search_l0_in_aoi(
+        self,
+        aoi_wkt: str,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L0 products intersecting a given AOI.
+        """
+        if date is not None and (product_date_start is not None or product_date_end is not None):
+            raise ValueError(
+                "Use either `date=...` or (`product_date_start`, `product_date_end`), not both."
+            )
+
+        if date is not None:
+            product_date_start, product_date_end = _day_bounds_utc(date)
+
+        params: Dict[str, Any] = {
+            "aoi": aoi_wkt,
+        }
+        if product_date_start is not None:
+            params["productDateStart"] = product_date_start
+        if product_date_end is not None:
+            params["productDateEnd"] = product_date_end
+        params.update(extra_params)
+
+        data = self.search_ref_data(
+            ref_data_collection=PHISAT2_L0_COLLECTION,
+            page=page,
+            results_per_page=results_per_page,
+            **params,
+        )
+        return data.get("features", [])
+
+
+    def search_l1_in_bbox(
+        self,
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L1 products intersecting a bounding box.
+        """
+        aoi_wkt = bbox_to_wkt(min_lon, min_lat, max_lon, max_lat)
+        return self.search_l1_in_aoi(
+            aoi_wkt=aoi_wkt,
+            date=date,
+            product_date_start=product_date_start,
+            product_date_end=product_date_end,
+            page=page,
+            results_per_page=results_per_page,
+            **extra_params,
+        )
+
+
+    def search_l0_in_bbox(
+        self,
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L0 products intersecting a bounding box.
+        """
+        aoi_wkt = bbox_to_wkt(min_lon, min_lat, max_lon, max_lat)
+        return self.search_l0_in_aoi(
+            aoi_wkt=aoi_wkt,
+            date=date,
+            product_date_start=product_date_start,
+            product_date_end=product_date_end,
+            page=page,
+            results_per_page=results_per_page,
+            **extra_params,
+        )
+
+
+    def search_l1_near_point(
+        self,
+        lon: float,
+        lat: float,
+        radius_km: float,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        n_points: int = 64,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L1 products around a lon/lat point using a circular AOI approximation.
+        """
+        aoi_wkt = point_buffer_to_wkt(
+            lon=lon,
+            lat=lat,
+            radius_km=radius_km,
+            n_points=n_points,
+        )
+        return self.search_l1_in_aoi(
+            aoi_wkt=aoi_wkt,
+            date=date,
+            product_date_start=product_date_start,
+            product_date_end=product_date_end,
+            page=page,
+            results_per_page=results_per_page,
+            **extra_params,
+        )
+
+
+    def search_l0_near_point(
+        self,
+        lon: float,
+        lat: float,
+        radius_km: float,
+        date: str | None = None,
+        product_date_start: str | None = None,
+        product_date_end: str | None = None,
+        page: int = 0,
+        results_per_page: int = 20,
+        n_points: int = 64,
+        **extra_params: Any,
+    ) -> list[Dict[str, Any]]:
+        """
+        Search PHISAT-2 L0 products around a lon/lat point using a circular AOI approximation.
+        """
+        aoi_wkt = point_buffer_to_wkt(
+            lon=lon,
+            lat=lat,
+            radius_km=radius_km,
+            n_points=n_points,
+        )
+        return self.search_l0_in_aoi(
+            aoi_wkt=aoi_wkt,
+            date=date,
+            product_date_start=product_date_start,
+            product_date_end=product_date_end,
+            page=page,
+            results_per_page=results_per_page,
+            **extra_params,
+        )

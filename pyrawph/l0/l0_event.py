@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Sequence, Union, List
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from ..utils.export_utils import export_to_tif as _export_to_tif, export_plain_tif
 
@@ -20,7 +19,35 @@ from pathlib import Path
 from .rawbin_converter import convert_l0_rawbin_inplace
 
 from ..remote.constants import DEFAULT_L0_DOWNLOAD_DIR, VM_L0_ROOT
-from ..remote.local_resolver import resolve_existing_product, find_product_folders_by_date
+from ..remote.local_resolver import resolve_existing_product
+from ..remote.catalog_geometry import (
+    enrich_meta_with_insula_feature,
+    get_catalog_corners as _get_catalog_corners,
+    get_catalog_center as _get_catalog_center,
+    get_catalog_polygon as _get_catalog_polygon,
+    format_catalog_geo as _format_catalog_geo,
+    print_catalog_geo as _print_catalog_geo,
+)
+
+from ..georef.catalog_overlay import (
+    show_catalog_geo_in_sentinel as _show_catalog_geo_in_sentinel,
+    show_coordinates_in_sentinel as _show_coordinates_in_sentinel,
+)
+
+from ..utils.display import (
+    prepare_event_display_image as _prepare_event_display_image,
+    show_prepared_display as _show_prepared_display,
+    format_event_display_title as _format_event_display_title,
+)
+
+from ..utils.l0_l1_registration import (
+    register_event_bands_to_master as _register_event_bands_to_master,
+)
+
+from ..utils.stats import (
+    compute_band_stats as _compute_band_stats,
+    plot_value_distribution as _plot_value_distribution,
+)
 
 BandSelector = Union[int, float, str]
 
@@ -79,6 +106,51 @@ class L0_event:
     scene_id: int = 0
     device: str = "cpu"
 
+    def get_catalog_corners(self, order: str = "latlon"):
+        return _get_catalog_corners(self, order=order)
+
+    def get_catalog_center(self, order: str = "latlon"):
+        return _get_catalog_center(self, order=order)
+
+    def get_catalog_polygon(self, order: str = "latlon", closed: bool = True):
+        return _get_catalog_polygon(self, order=order, closed=closed)
+
+    def format_catalog_geo(self, order: str = "latlon", decimals: int = 6) -> str:
+        return _format_catalog_geo(self, order=order, decimals=decimals)
+
+    def print_catalog_geo(self, order: str = "latlon", decimals: int = 6) -> None:
+        _print_catalog_geo(self, order=order, decimals=decimals)
+    
+    def show_catalog_geo_in_sentinel(self, cache_dir: str | Path = "georef_cache", **kwargs):
+        return _show_catalog_geo_in_sentinel(self, cache_dir=cache_dir, **kwargs)
+
+    def show_coordinates_in_sentinel(
+        self,
+        cache_dir: str | Path = "georef_cache",
+        **kwargs,
+    ):
+        """
+        Show the Insula catalog footprint on a Sentinel-2 mosaic.
+
+        If no mosaic_path is provided, PyRawPh automatically builds or reuses one.
+        """
+        if "mosaic_path" not in kwargs:
+            cached = self.meta.get("sentinel_mosaic_path")
+            if cached is not None:
+                kwargs["mosaic_path"] = cached
+
+        result = _show_coordinates_in_sentinel(
+            self,
+            cache_dir=cache_dir,
+            **kwargs,
+        )
+
+        mosaic = result.get("mosaic")
+        if mosaic is not None and getattr(mosaic, "source_path", None) is not None:
+            self.meta["sentinel_mosaic_path"] = str(mosaic.source_path)
+
+        return result
+
     def __post_init__(self) -> None:
         """
         Validate and normalize the internal array after dataclass initialization.
@@ -94,102 +166,190 @@ class L0_event:
         if self.arr.ndim != 3:
             raise ValueError(f"L0_event expects (C,H,W), got {self.arr.shape}.")
     
-    def _normalize_for_display(self, img: np.ndarray, stretch=(2, 98)) -> np.ndarray:
-        """
-        Normalize one 2D image for display using a percentile stretch.
 
-        This helper converts the input image to `float32`, computes lower and upper
-        percentiles, and rescales the values to `[0, 1]`. It is intended only for
-        visualization and does not modify the event data.
+    
+
+    def _resolve_band_index_for_registration(self, band):
+        """
+        Resolve a band selector to an integer index for registration purposes.
+        """
+        return self._resolve_band_index(band)
+
+
+    def _registered_for_display(
+        self,
+        master_band="RED",
+        max_shifts=(80, 80),
+        force=False,
+    ):
+        """
+        Return a band-registered copy of this L0 event for display.
+        """
+        if not hasattr(self, "_display_registered_cache"):
+            self._display_registered_cache = {}
+
+        cache_key = f"master={master_band}|max_shifts={tuple(max_shifts)}"
+
+        if not force and cache_key in self._display_registered_cache:
+            return self._display_registered_cache[cache_key]
+
+        master_idx = self._resolve_band_index_for_registration(master_band)
+
+        registered = _register_event_bands_to_master(
+            self,
+            master_band=master_idx,
+            max_shifts=max_shifts,
+        )
+
+        self._display_registered_cache[cache_key] = registered
+        return registered
+    
+    def band_stats(
+        self,
+        bands="all",
+        percentiles=(0, 1, 2, 5, 50, 95, 98, 99, 100),
+        sample=500_000,
+        random_state=0,
+    ):
+        """
+        Compute raw-value statistics for selected bands.
+        """
+        return _compute_band_stats(
+            self,
+            bands=bands,
+            percentiles=percentiles,
+            sample=sample,
+            random_state=random_state,
+        )
+
+
+    def plot_distribution(
+        self,
+        bands="all",
+        bins=256,
+        sample=500_000,
+        log_y=True,
+        percentiles=(1, 2, 50, 98, 99),
+        hist_range_percentiles=(0.1, 99.9),
+        random_state=0,
+        figsize=(12, 7),
+        title=None,
+        out_png=None,
+    ):
+        """
+        Plot raw-value distributions for selected bands.
+        """
+        return _plot_value_distribution(
+            self,
+            bands=bands,
+            bins=bins,
+            sample=sample,
+            log_y=log_y,
+            percentiles=percentiles,
+            hist_range_percentiles=hist_range_percentiles,
+            random_state=random_state,
+            figsize=figsize,
+            title=title,
+            out_png=out_png,
+        )
+
+
+    def show(
+        self,
+        bands=("RED", "GREEN", "BLUE"),
+        normalize=True,
+        normalization="percentile",
+        percentiles=(2, 98),
+        per_band=True,
+        registered=False,
+        registration_master="RED",
+        max_shifts=(80, 80),
+        force_registration=False,
+        interpolation="nearest",
+        figsize=(8, 8),
+        title=None,
+        out_png=None,
+    ):
+        """
+        Display a PhiSat-2 L0 event.
 
         Args:
-            img: Input 2D image to normalize for display.
-            stretch: Two-element tuple `(p_lo, p_hi)` defining the percentiles used for
-                contrast stretching.
-
-        Returns:
-            A 2D `float32` array normalized to `[0, 1]`.
+            bands: One band, three bands for RGB, or "all".
+            normalize: Whether to normalize values for display.
+            normalization: "percentile", "minmax", "zscore", or "none".
+            percentiles: Percentiles used when normalization="percentile".
+            per_band: Normalize each displayed band/channel independently.
+            registered: If True, align bands to registration_master before display.
+            registration_master: Master band used for display registration.
+            max_shifts: Maximum allowed registration shift.
+            force_registration: Recompute registration even if cached.
+            interpolation: Matplotlib interpolation.
+            figsize: Figure size.
+            title: Optional title.
+            out_png: Optional output PNG path.
         """
-        img = img.astype(np.float32)
-        lo = np.percentile(img, stretch[0])
-        hi = np.percentile(img, stretch[1])
-        return np.clip((img - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
+        ev = self
 
-    def plot_band(self, band=0, stretch=(2, 98), figsize=(6, 6), title=None):
-        """
-        Display one band of the event as a grayscale image.
-
-        The selected band is normalized with a percentile stretch before display.
-
-        Args:
-            band: Band selector accepted by :meth:`get_band`.
-            stretch: Two-element tuple `(p_lo, p_hi)` used for contrast stretching.
-            figsize: Matplotlib figure size.
-            title: Optional plot title. If `None`, a default title is used.
-
-        Returns:
-            None.
-        """
-        img = self.get_band(band)
-        disp = self._normalize_for_display(img, stretch=stretch)
-
-        plt.figure(figsize=figsize)
-        plt.imshow(disp, cmap="gray")
-        plt.axis("off")
-        plt.title(title or f"Band {band}")
-        plt.show()
-
-    def plot_rgb(self, bands=("RED", "GREEN", "BLUE"), stretch=(2, 98), figsize=(8, 8), title=None):
-        """
-        Display a quick RGB-like composite built from three selected bands.
-
-        This method is intended for debugging and qualitative inspection. The result is
-        not guaranteed to be a physically correct true-color rendering.
-
-        Args:
-            bands: Three band selectors describing the red, green, and blue channels.
-            stretch: Two-element tuple `(p_lo, p_hi)` used for contrast stretching.
-            figsize: Matplotlib figure size.
-            title: Optional plot title. If `None`, a default title is used.
-
-        Returns:
-            None.
-        """
-        rgb = self.rgb(bands=bands, stretch=stretch)
-
-        plt.figure(figsize=figsize)
-        plt.imshow(rgb)
-        plt.axis("off")
-        plt.title(title or f"RGB-like {bands}")
-        plt.show()
-
-    def plot_all_bands(self, stretch=(2, 98), figsize=(16, 8)):
-        """
-        Display all bands of the event in a 2x4 grid.
-
-        Each band is shown independently after percentile normalization. If wavelength
-        metadata is available, the wavelength is included in the subplot title.
-
-        Args:
-            stretch: Two-element tuple `(p_lo, p_hi)` used for contrast stretching.
-            figsize: Matplotlib figure size.
-
-        Returns:
-            None.
-        """
-        fig, axes = plt.subplots(2, 4, figsize=figsize)
-        axes = axes.ravel()
-
-        for i in range(self.arr.shape[0]):
-            disp = self._normalize_for_display(self.arr[i], stretch=stretch)
-            axes[i].imshow(disp, cmap="gray")
-            axes[i].set_title(
-                f"B{i} - {self.meta.get('band_wavelength_nm', ['?']*self.arr.shape[0])[i]} nm"
+        if registered:
+            ev = self._registered_for_display(
+                master_band=registration_master,
+                max_shifts=max_shifts,
+                force=force_registration,
             )
-            axes[i].axis("off")
 
-        plt.tight_layout()
-        plt.show()
+        prepared = _prepare_event_display_image(
+            ev,
+            bands=bands,
+            normalize=normalize,
+            normalization=normalization,
+            percentiles=percentiles,
+            per_band=per_band,
+        )
+
+        if title is None:
+            title = _format_event_display_title(
+                level="L0",
+                prepared=prepared,
+                registered=registered,
+                normalize=normalize,
+                normalization=normalization,
+                percentiles=percentiles,
+                per_band=per_band,
+                registration_master=registration_master,
+            )
+
+        return _show_prepared_display(
+            prepared,
+            figsize=figsize,
+            title=title,
+            interpolation=interpolation,
+            out_png=out_png,
+        )
+
+
+    def show_rgb(self, bands=("RED", "GREEN", "BLUE"), **kwargs):
+        """
+        Display an RGB composite.
+        """
+        return self.show(bands=bands, **kwargs)
+
+
+    def show_band(self, band, **kwargs):
+        """
+        Display one band in grayscale.
+        """
+        return self.show(bands=band, **kwargs)
+
+
+    def show_all_bands(self, **kwargs):
+        """
+        Display all bands separately.
+        """
+        return self.show(bands="all", **kwargs)
+
+ 
+
+
 
     @classmethod
     def from_path(
@@ -241,6 +401,7 @@ class L0_event:
         local_fallback: bool = True,
         vm_fallback: bool = False,
         local_roots: Optional[List[str | Path]] = None,
+        attach_catalog_geo: bool = True,
     ) -> Union["L0_event", Path]:
         search_roots = []
 
@@ -258,9 +419,15 @@ class L0_event:
             roots=search_roots,
         )
 
+        feature = None
+
         if existing is not None:
             downloaded_folder = Path(existing)
-            feature_props = None
+            if attach_catalog_geo:
+                feature = client.get_feature_by_identifier(
+                    ref_data_collection=ref_data_collection,
+                    identifier=identifier,
+                )
         else:
             feature = client.get_feature_by_identifier(
                 ref_data_collection=ref_data_collection,
@@ -277,7 +444,6 @@ class L0_event:
                     force_redownload=force_redownload,
                 )
             )
-            feature_props = feature["properties"]
 
         if not convert:
             return downloaded_folder
@@ -296,19 +462,19 @@ class L0_event:
             device=device,
         )
 
-        event.meta["source"] = "local_or_vm" if feature_props is None else "insula"
+        event.meta["source"] = "local_or_vm" if existing is not None else "insula"
         event.meta["resolved_product_folder"] = str(downloaded_folder)
         event.meta["prepared_product_folder"] = str(prepared_folder)
         event.meta["insula_converted"] = True
 
-        if feature_props is not None:
-            event.meta["insula_filename"] = feature_props.get("filename")
-            event.meta["insula_product_identifier"] = feature_props.get("productIdentifier")
-            event.meta["insula_download_url"] = feature_props.get("_links", {}).get("download", {}).get("href")
-            event.meta["insula_platform_url"] = feature_props.get("platformUrl")
+        if feature is not None:
+            enrich_meta_with_insula_feature(
+                meta=event.meta,
+                feature=feature,
+                ref_data_collection=ref_data_collection,
+            )
 
         return event
-
 
     @classmethod
     def from_insula_search(
@@ -409,15 +575,16 @@ class L0_event:
             device=device,
         )
 
-        props = feature["properties"]
         event.meta["source"] = "insula"
         event.meta["resolved_product_folder"] = str(downloaded_folder)
         event.meta["prepared_product_folder"] = str(prepared_folder)
-        event.meta["insula_filename"] = props.get("filename")
-        event.meta["insula_product_identifier"] = props.get("productIdentifier")
-        event.meta["insula_download_url"] = props.get("_links", {}).get("download", {}).get("href")
-        event.meta["insula_platform_url"] = props.get("platformUrl")
         event.meta["insula_converted"] = True
+
+        enrich_meta_with_insula_feature(
+            meta=event.meta,
+            feature=feature,
+            ref_data_collection=ref_data_collection,
+        )
 
         return event
 

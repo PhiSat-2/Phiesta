@@ -373,3 +373,70 @@ def project_bbox_l1_to_l0_native(bbox_yxyx, registration_info: Dict[str, Any], t
     pts = np.array([[y0, x0], [y1, x1]], dtype=np.float32)
     pts_back = project_points_l1_to_l0_native(pts, registration_info, target_band=target_band)
     return [float(pts_back[0, 0]), float(pts_back[0, 1]), float(pts_back[1, 0]), float(pts_back[1, 1])]
+
+def register_event_bands_to_master(
+    event,
+    master_band=3,
+    max_shifts: Tuple[int, int] = (80, 80),
+):
+    """
+    Register all bands of one event to one master band.
+
+    This is an intra-event band-to-band registration helper intended for
+    visualization and quick analysis. It does not modify the original event.
+
+    Args:
+        event: Event-like object exposing get_band(...), as_numpy(), get_meta(),
+            and with_array(...).
+        master_band: Master/reference band selector. Usually "RED" / 3 for L1
+            visualization.
+        max_shifts: Optional maximum shift `(max_dy, max_dx)`.
+
+    Returns:
+        A new event-like object with bands shifted into the master-band space.
+    """
+    _require_torch()
+
+    # Resolve aliases if event supports them through get_band.
+    master = event.get_band(master_band)
+    arr = event.as_numpy()
+
+    aligned_bands: List[np.ndarray] = []
+    band_shifts_to_master: Dict[str, List[float]] = {}
+
+    ref_np = master.astype(np.float32)
+
+    for i in range(arr.shape[0]):
+        band_np = event.get_band(i).astype(np.float32)
+
+        if i == master_band or str(master_band).upper() in {str(i), f"B{i}", f"BAND_{i}"}:
+            warped_np = ref_np
+            shift = np.array([0.0, 0.0], dtype=np.float32)
+        else:
+            src_i = prep_for_phase_corr(ref_np)
+            tgt_i = prep_for_phase_corr(band_np)
+            shift = phase_correlation_shift(
+                src_i,
+                tgt_i,
+                max_shifts=max_shifts,
+            )[0].cpu().numpy().astype(np.float32)
+            warped_np = warp_np_by_shift(band_np, shift)
+
+        aligned_bands.append(warped_np)
+        band_shifts_to_master[str(i)] = shift.tolist()
+
+    aligned_cube = np.stack(aligned_bands, axis=0).astype(np.float32)
+
+    meta_updates = {
+        "dtype": str(aligned_cube.dtype),
+        "band_registration_info": {
+            "method": "phase_correlation_to_master_band",
+            "master_band": master_band,
+            "max_shifts": list(max_shifts),
+            "band_shifts_to_master_dy_dx": band_shifts_to_master,
+            "source_shape": list(arr.shape),
+            "registered_shape": list(aligned_cube.shape),
+        },
+    }
+
+    return event.with_array(aligned_cube, meta_updates=meta_updates)

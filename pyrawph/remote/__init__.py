@@ -10,6 +10,21 @@ from .constants import (
     VM_L1_ROOT,
 )
 from .auth import connect_insula
+from .catalog_geometry import (
+    catalog_geo_from_feature,
+    enrich_meta_with_insula_feature,
+    get_catalog_corners,
+    get_catalog_center,
+    get_catalog_polygon,
+    format_catalog_geo,
+    print_catalog_geo,
+    get_catalog_identifier,
+    get_catalog_acquisition_datetime,
+    bbox_to_wkt,
+    point_buffer_to_wkt,
+    get_catalog_bbox_lonlat,
+    extract_phisat_acquisition_id
+)
 
 __all__ = [
     "InsulaClient",
@@ -22,4 +37,17 @@ __all__ = [
     "DEFAULT_L1_DOWNLOAD_DIR",
     "VM_L0_ROOT",
     "VM_L1_ROOT",
+    "catalog_geo_from_feature",
+    "enrich_meta_with_insula_feature",
+    "get_catalog_corners",
+    "get_catalog_center",
+    "get_catalog_polygon",
+    "format_catalog_geo",
+    "print_catalog_geo",
+    "get_catalog_identifier",
+    "get_catalog_acquisition_datetime",
+    "bbox_to_wkt",
+    "point_buffer_to_wkt",
+    "get_catalog_bbox_lonlat",
+    "extract_phisat_acquisition_id",
 ]

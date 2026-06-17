@@ -1,11 +1,21 @@
 from getpass import getpass
-from InsulaWorkflowClient import InsulaOpenIDConnect
 
 from .insula_client import InsulaClient
 from .constants import PHISAT2_BASE_URL
 
 from ..sys_cfg import DATA_PATH
 
+def _load_insula_openid_connect():
+    try:
+        from InsulaWorkflowClient import InsulaOpenIDConnect
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "InsulaWorkflowClient is required to use connect_insula(). "
+            "Install it in the current Python environment, or make sure it is bundled "
+            "with PyRawPh."
+        ) from exc
+
+    return InsulaOpenIDConnect
 
 def connect_insula(
     username: str | None = None,
@@ -29,6 +39,8 @@ def connect_insula(
     Returns:
         An authenticated `InsulaClient`.
     """
+
+    InsulaOpenIDConnect = _load_insula_openid_connect()
     insula_auth = InsulaOpenIDConnect(
         authorization_endpoint="https://identity.insula.earth/realms/phisat2/protocol/openid-connect/auth",
         token_endpoint="https://identity.insula.earth/realms/phisat2/protocol/openid-connect/token",

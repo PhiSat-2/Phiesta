@@ -53,6 +53,10 @@ BandSelector = Union[int, float, str]
 
 
 _ALIAS_TO_WAVELENGTH = {
+    "PAN": 625.0,
+    "PANCHROMATIC": 625.0,
+    "B0": 625.0,
+    "625NM": 625.0,
     "BLUE": 490.0,
     "GREEN": 560.0,
     "RED": 665.0,

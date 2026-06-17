@@ -17,6 +17,10 @@ from ..remote.catalog_geometry import (
 
 from .sentinel_source import find_best_sentinel_source
 
+from .sentinel_crop import create_sentinel_crop
+
+from .simulation import simulate_phisat2_from_sentinel_crop
+
 def _event_meta(event: Any) -> dict:
     if hasattr(event, "get_meta"):
         return event.get_meta()
@@ -83,6 +87,12 @@ def build_sentinel_triplet(
     verbose: bool = True,
     run_sentinel_source: bool = True,
     min_coverage: float = 0.85,
+    run_sentinel_crop: bool = True,
+    overwrite_crop: bool = False,
+    run_simulation: bool = True,
+    overwrite_simulation: bool = False,
+    simulation_workers: int = 1,
+    simulation_target_size: tuple[int, int] | None = (1024, 1024),
 ) -> TripletResult:
     """
     Initialize a Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet build.
@@ -172,6 +182,66 @@ def build_sentinel_triplet(
                 f"{source.satellite}, delta={source.delta_days}d, "
                 f"cloud={source.cloud_cover}%, coverage={source.coverage}%"
             )
+
+    if run_sentinel_crop:
+        if triplet.sentinel_source is None:
+            raise ValueError("Cannot run Sentinel crop before Sentinel source selection.")
+
+        if verbose:
+            print("[PyRawPh] Building Sentinel-2B crop")
+
+        crop = create_sentinel_crop(
+            event=event,
+            source=triplet.sentinel_source,
+            output_dir=paths.sentinel_dir,
+            buffer_km=buffer_km,
+            overwrite=overwrite_crop,
+            verbose=verbose,
+        )
+
+        triplet.sentinel_crop = crop
+        triplet.status = "SENTINEL_CROP_CREATED"
+        triplet.qc.update(
+            {
+                "status": triplet.status,
+                "pipeline_stage": "sentinel_crop",
+                "s2_crop_path": crop.crop_path,
+                "s2_metadata_path": crop.metadata_path,
+                "s2_crop_bands": crop.bands,
+            }
+        )
+    
+    if run_simulation:
+        if triplet.sentinel_crop is None:
+            raise ValueError("Cannot run simulation before Sentinel crop creation.")
+
+        if verbose:
+            print("[PyRawPh] Running PhiSat-2 simulation")
+
+        simulation = simulate_phisat2_from_sentinel_crop(
+            crop=triplet.sentinel_crop,
+            output_dir=paths.simulated_dir,
+            phisat2_exec_path=exec_path,
+            processing_level="L1C",
+            workers=simulation_workers,
+            overwrite=overwrite_simulation,
+            target_size=simulation_target_size,
+            verbose=verbose,
+        )
+
+        triplet.simulation = simulation
+        triplet.status = "SIMULATION_CREATED"
+        triplet.qc.update(
+            {
+                "status": triplet.status,
+                "pipeline_stage": "simulation",
+                "simulated_path": simulation.simulated_path,
+                "simulation_backend": simulation.backend,
+                "simulation_processing_level": simulation.processing_level,
+                "simulation_band_order": simulation.band_order,
+                "simulation_target_size": simulation_target_size,
+            }
+        )
 
     if save:
         triplet.save_qc()

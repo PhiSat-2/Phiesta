@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 DEFAULT_RGB_BANDS = ("RED", "GREEN", "BLUE")
 
 PHISAT2_BAND_INFO = {
+    0: {"name": "PAN / B0", "wavelength_nm": 625, "bandwidth_nm": None},
     0: {"name": "PAN", "wavelength_nm": 625, "bandwidth_nm": 250},
     1: {"name": "BLUE / MS1", "wavelength_nm": 490, "bandwidth_nm": 65},
     2: {"name": "GREEN / MS2", "wavelength_nm": 560, "bandwidth_nm": 35},
@@ -21,6 +22,10 @@ PHISAT2_BAND_INFO = {
 }
 
 PHISAT2_ALIAS_TO_INDEX = {
+    "PAN": 0,
+    "PANCHROMATIC": 0,
+    "B0": 0,
+    "625NM": 0,
     "PAN": 0,
     "BLUE": 1,
     "GREEN": 2,

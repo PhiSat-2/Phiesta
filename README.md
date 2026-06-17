@@ -191,6 +191,33 @@ This metadata is used by:
 - plotting
 - GeoTIFF export
 
+
+
+## Full Sentinel-2 / PhiSat-2 triplet generation
+
+```python
+from pyrawph import connect_insula
+
+client = connect_insula()
+event = client.load_l1("5359")
+
+triplet = event.build_full_sentinel_triplet()
+event.inspect_full_sentinel_triplet(triplet)
+event.show_full_sentinel_triplet(triplet)
+```
+
+The resulting triplet contains:
+
+real PhiSat-2 L1 image, 8 bands, aligned grid;
+Sentinel-2B crop warped to the PhiSat-2 grid;
+simulated PhiSat-2 image generated from Sentinel-2B and warped to the PhiSat-2 grid.
+
+Output paths are available with:
+
+triplet["paths"]
+
+
+
 ## Typical workflow
 
 A common workflow in PyRawPh is:

@@ -122,6 +122,7 @@ class L1_event:
 
     # alias wavelengths (nm) -> resolve by closest wavelength
     _ALIAS_NM: Dict[str, int] = {
+        "PAN": 625, "PANCHROMATIC": 625, "B0": 625, "625NM": 625,
         "BLUE": 490, "B": 490,
         "GREEN": 560, "G": 560,
         "RED": 665, "R": 665,
@@ -160,6 +161,45 @@ class L1_event:
         simulation, and alignment are progressively added in the triplet pipeline.
         """
         return _build_sentinel_triplet(self, **kwargs)
+    
+    def build_full_sentinel_triplet(self, **kwargs):
+        """
+        Build a full pixel-aligned Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet.
+
+        This high-level wrapper returns paths to:
+        - real PhiSat-2 L1 on the real image grid,
+        - Sentinel-2 warped to the real PhiSat-2 grid,
+        - simulated PhiSat-2 warped to the real PhiSat-2 grid.
+        """
+        from ..triplets.full_pipeline import build_full_sentinel_triplet
+
+        return build_full_sentinel_triplet(self, **kwargs)
+
+    def show_full_sentinel_triplet(self, triplet=None, **kwargs):
+        """
+        Display a full Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet.
+
+        If triplet is None, the full triplet is built first with default parameters.
+        """
+        from ..triplets.visualization import show_full_triplet
+
+        if triplet is None:
+            triplet = self.build_full_sentinel_triplet()
+
+        return show_full_triplet(triplet, **kwargs)
+
+    def inspect_full_sentinel_triplet(self, triplet=None, **kwargs):
+        """
+        Inspect a full Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet.
+
+        If triplet is None, the full triplet is built first with default parameters.
+        """
+        from ..triplets.visualization import inspect_full_triplet
+
+        if triplet is None:
+            triplet = self.build_full_sentinel_triplet()
+
+        return inspect_full_triplet(triplet, **kwargs)
     
     def get_catalog_corners(self, order: str = "latlon"):
         return _get_catalog_corners(self, order=order)

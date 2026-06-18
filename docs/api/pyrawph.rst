@@ -17,8 +17,8 @@ Subpackages
 Submodules
 ----------
 
-pyrawph.sys\_cfg module
------------------------
+pyrawph.sys_cfg module
+----------------------
 
 .. automodule:: pyrawph.sys_cfg
    :members:

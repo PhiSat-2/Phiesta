@@ -488,6 +488,34 @@ class L1_event:
         )
 
 
+
+    def plot_display_diagnostics(self, **kwargs):
+        """
+        Plot standard display diagnostics for visual scene review.
+
+        This helper is useful to understand raw ΦSat-2 band distributions and
+        choose robust display settings. It shows natural RGB, false color,
+        vegetation composite, NIR, and a raw NDVI-like diagnostic.
+
+        Important:
+            The NDVI-like panel is computed from raw DN values and should not be
+            interpreted as a physically calibrated NDVI unless the input data
+            have been converted to comparable reflectance-like units.
+        """
+        from pyrawph.utils.display_diagnostics import plot_display_diagnostics
+
+        return plot_display_diagnostics(self, **kwargs)
+
+
+    def compare_display_stretches(self, **kwargs):
+        """
+        Compare several percentile stretches for a selected RGB composite.
+        """
+        from pyrawph.utils.display_diagnostics import compare_display_stretches
+
+        return compare_display_stretches(self, **kwargs)
+
+
     def show_rgb(self, bands=("RED", "GREEN", "BLUE"), **kwargs):
         """
         Display an RGB composite.

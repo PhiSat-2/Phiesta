@@ -16,5 +16,25 @@ dependencies = [
     "InsulaWorkflowClient",
 ]
 
+
 [tool.setuptools.packages.find]
-include = ["pyrawph", "pyrawph.*"]
+include = ["pyrawph", "pyrawph.*", "third_party", "third_party.*"]
+
+[tool.setuptools.package-data]
+third_party = ["phisat2_exec/*.bin"]
+
+[project.optional-dependencies]
+triplets = [
+    "opencv-python",
+    "torch",
+    "pyproj",
+    "scipy",
+    "scikit-image",
+    "geopandas",
+    "sentinelhub",
+    "eo-learn",
+    "sunpy",
+]
+docs = [
+    "sphinx",
+]

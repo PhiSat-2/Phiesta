@@ -9,6 +9,9 @@ Subpackages
 
    pyrawph.l0
    pyrawph.l1
+   pyrawph.remote
+   pyrawph.georef
+   pyrawph.triplets
    pyrawph.utils
 
 Submodules

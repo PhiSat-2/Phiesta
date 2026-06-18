@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 
 from .models import SentinelCropResult, SimulationResult
@@ -18,6 +19,21 @@ SIMULATED_BAND_ORDER = [
     "RED_EDGE_2",
     "RED_EDGE_3",
 ]
+
+
+
+def _ensure_orbitalai_vendor_importable() -> None:
+    """
+    Make the vendored OrbitalAI simulation package importable.
+
+    This is needed when running scripts from examples/, where Python's sys.path
+    may not include the repository root even if pyrawph itself is installed in
+    editable mode.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
 
 
 def _ensure_simulation_metadata_alias(metadata_path: str | Path) -> Path:
@@ -142,6 +158,8 @@ def simulate_phisat2_from_sentinel_crop(
         print(f"[PyRawPh] Simulating PhiSat-2 from Sentinel crop: {crop_path}")
         print(f"[PyRawPh] Simulation metadata: {expected_metadata}")
         print(f"[PyRawPh] PhiSat-2 executable: {exec_path}")
+
+    _ensure_orbitalai_vendor_importable()
 
     from third_party.orbitalai_phisat2_sim.simulation_config import (
         SimulationConfig,

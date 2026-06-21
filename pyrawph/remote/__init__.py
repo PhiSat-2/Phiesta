@@ -52,4 +52,5 @@ __all__ = [
     "extract_phisat_acquisition_id",
 ]
 from .search_table import search_result_to_dataframe, search_result_to_records, export_search_result_csv
+from .search_table import add_footprint_bbox_columns, filter_dataframe_by_bbox, search_bbox_table
 

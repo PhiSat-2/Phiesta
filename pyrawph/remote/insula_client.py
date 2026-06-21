@@ -210,6 +210,63 @@ class InsulaClient:
         return data["features"]
     
 
+
+    def search_l1_bbox_table(
+        self,
+        bbox_lonlat,
+        pages=40,
+        results_per_page=100,
+        **search_kwargs,
+    ):
+        """
+        Search L1 products intersecting a lon/lat bbox and return a compact DataFrame.
+
+        Args:
+            bbox_lonlat: (min_lon, min_lat, max_lon, max_lat).
+            pages: maximum number of Insula pages to scan.
+            results_per_page: number of products per page.
+            **search_kwargs: extra arguments forwarded to search_l1.
+        """
+        from pyrawph.remote.search_table import search_bbox_table
+
+        return search_bbox_table(
+            self,
+            level="L1",
+            bbox_lonlat=bbox_lonlat,
+            pages=pages,
+            results_per_page=results_per_page,
+            **search_kwargs,
+        )
+
+
+    def search_l0_bbox_table(
+        self,
+        bbox_lonlat,
+        pages=40,
+        results_per_page=100,
+        **search_kwargs,
+    ):
+        """
+        Search L0 products intersecting a lon/lat bbox and return a compact DataFrame.
+
+        Args:
+            bbox_lonlat: (min_lon, min_lat, max_lon, max_lat).
+            pages: maximum number of Insula pages to scan.
+            results_per_page: number of products per page.
+            **search_kwargs: extra arguments forwarded to search_l0.
+        """
+        from pyrawph.remote.search_table import search_bbox_table
+
+        return search_bbox_table(
+            self,
+            level="L0",
+            bbox_lonlat=bbox_lonlat,
+            pages=pages,
+            results_per_page=results_per_page,
+            **search_kwargs,
+        )
+
+
     def search_l1_table(self, *args, **kwargs):
         """
         Search L1 products and return a compact pandas DataFrame.

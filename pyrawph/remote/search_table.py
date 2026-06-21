@@ -169,3 +169,122 @@ def export_search_result_csv(search_result: Any, out_csv: str) -> str:
     df = search_result_to_dataframe(search_result)
     df.to_csv(out_csv, index=False)
     return out_csv
+
+
+def add_footprint_bbox_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add footprint bbox columns derived from corner coordinates.
+
+    Adds:
+    - footprint_min_lon
+    - footprint_min_lat
+    - footprint_max_lon
+    - footprint_max_lat
+    """
+    out = df.copy()
+
+    lon_cols = [f"corner_{i}_lon" for i in range(1, 5) if f"corner_{i}_lon" in out.columns]
+    lat_cols = [f"corner_{i}_lat" for i in range(1, 5) if f"corner_{i}_lat" in out.columns]
+
+    if not lon_cols or not lat_cols:
+        out["footprint_min_lon"] = None
+        out["footprint_min_lat"] = None
+        out["footprint_max_lon"] = None
+        out["footprint_max_lat"] = None
+        return out
+
+    out["footprint_min_lon"] = out[lon_cols].min(axis=1)
+    out["footprint_max_lon"] = out[lon_cols].max(axis=1)
+    out["footprint_min_lat"] = out[lat_cols].min(axis=1)
+    out["footprint_max_lat"] = out[lat_cols].max(axis=1)
+
+    return out
+
+
+def filter_dataframe_by_bbox(
+    df: pd.DataFrame,
+    bbox_lonlat: tuple[float, float, float, float],
+) -> pd.DataFrame:
+    """
+    Filter a product table by intersection with a lon/lat bbox.
+
+    Args:
+        df: DataFrame returned by search_result_to_dataframe or search_l1_table.
+        bbox_lonlat: (min_lon, min_lat, max_lon, max_lat).
+
+    Returns:
+        Filtered DataFrame.
+    """
+    min_lon, min_lat, max_lon, max_lat = bbox_lonlat
+
+    out = add_footprint_bbox_columns(df)
+
+    intersects = (
+        (out["footprint_max_lon"] >= min_lon)
+        & (out["footprint_min_lon"] <= max_lon)
+        & (out["footprint_max_lat"] >= min_lat)
+        & (out["footprint_min_lat"] <= max_lat)
+    )
+
+    return out[intersects].copy()
+
+
+def search_bbox_table(
+    client,
+    *,
+    level: str = "L1",
+    bbox_lonlat: tuple[float, float, float, float],
+    pages: int = 40,
+    results_per_page: int = 100,
+    **search_kwargs,
+) -> pd.DataFrame:
+    """
+    Search several Insula pages and return products intersecting a lon/lat bbox.
+
+    This uses catalog footprints from Insula. It is intended for discovery and
+    approximate filtering, not precise pixel-level georeferencing.
+
+    Args:
+        client: InsulaClient.
+        level: "L1" or "L0".
+        bbox_lonlat: (min_lon, min_lat, max_lon, max_lat).
+        pages: maximum number of pages to scan.
+        results_per_page: number of products per Insula page.
+        **search_kwargs: extra arguments forwarded to search_l1/search_l0.
+
+    Returns:
+        Filtered compact DataFrame.
+    """
+    all_tables = []
+
+    level = level.upper()
+
+    for page in range(int(pages)):
+        kwargs = dict(search_kwargs)
+        kwargs["page"] = page
+        kwargs["results_per_page"] = results_per_page
+
+        if level == "L1":
+            result = client.search_l1(**kwargs)
+        elif level == "L0":
+            result = client.search_l0(**kwargs)
+        else:
+            raise ValueError(f"Unsupported level: {level!r}. Use 'L1' or 'L0'.")
+
+        df_page = search_result_to_dataframe(result)
+
+        if df_page.empty:
+            break
+
+        all_tables.append(df_page)
+
+    if not all_tables:
+        return pd.DataFrame()
+
+    df = pd.concat(all_tables, ignore_index=True)
+    df = filter_dataframe_by_bbox(df, bbox_lonlat=bbox_lonlat)
+
+    if "start_datetime" in df.columns:
+        df = df.sort_values("start_datetime", ascending=False, na_position="last")
+
+    return df.reset_index(drop=True)

@@ -288,3 +288,166 @@ def search_bbox_table(
         df = df.sort_values("start_datetime", ascending=False, na_position="last")
 
     return df.reset_index(drop=True)
+
+
+def _corners_from_row(row) -> list[list[float]]:
+    """
+    Extract footprint corners from a search table row.
+    """
+    corners = []
+
+    for idx in range(1, 5):
+        lon_key = f"corner_{idx}_lon"
+        lat_key = f"corner_{idx}_lat"
+
+        if lon_key in row and lat_key in row:
+            lon = row[lon_key]
+            lat = row[lat_key]
+
+            if pd.notna(lon) and pd.notna(lat):
+                corners.append([float(lon), float(lat)])
+
+    if corners:
+        return corners
+
+    if "corners_lonlat" in row and isinstance(row["corners_lonlat"], str) and row["corners_lonlat"]:
+        try:
+            return json.loads(row["corners_lonlat"])
+        except Exception:
+            return []
+
+    return []
+
+
+def search_table_to_geojson(df: pd.DataFrame) -> dict:
+    """
+    Convert a compact search table into a GeoJSON FeatureCollection.
+
+    The geometry uses the Insula catalog footprint corners.
+    This is intended for visualization and approximate spatial filtering.
+    """
+    features = []
+
+    for _, row in df.iterrows():
+        row_dict = row.to_dict()
+        corners = _corners_from_row(row_dict)
+
+        if len(corners) < 4:
+            continue
+
+        polygon = corners + [corners[0]]
+
+        properties = {}
+        for key, value in row_dict.items():
+            if key.startswith("corner_"):
+                continue
+            if key in {"corners_lonlat", "polygon_lonlat"}:
+                continue
+
+            try:
+                if pd.isna(value):
+                    value = None
+            except Exception:
+                pass
+
+            properties[key] = value
+
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [polygon],
+            },
+            "properties": properties,
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
+
+
+def export_search_table_geojson(df: pd.DataFrame, out_geojson: str) -> str:
+    """
+    Export a compact search table to GeoJSON.
+    """
+    from pathlib import Path
+
+    out = Path(out_geojson)
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    geojson = search_table_to_geojson(df)
+
+    with out.open("w", encoding="utf-8") as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=2)
+
+    return str(out)
+
+
+def load_products_from_table(
+    client,
+    table: pd.DataFrame,
+    *,
+    level: str = "L1",
+    limit: int | None = None,
+    product_id_col: str = "product_id",
+    continue_on_error: bool = True,
+    **load_kwargs,
+) -> list[dict]:
+    """
+    Load/download products listed in a compact search table.
+
+    Args:
+        client: InsulaClient.
+        table: DataFrame containing product ids.
+        level: "L1" or "L0".
+        limit: optional max number of rows to process.
+        product_id_col: column containing product ids.
+        continue_on_error: if True, keep going when one product fails.
+        **load_kwargs: forwarded to client.load_l1/load_l0.
+
+    Returns:
+        List of dictionaries with product_id, status, and object/error.
+    """
+    if product_id_col not in table.columns:
+        raise ValueError(f"Missing column {product_id_col!r} in table.")
+
+    rows = table.head(limit).copy() if limit is not None else table.copy()
+    results = []
+
+    level = level.upper()
+
+    for _, row in rows.iterrows():
+        product_id = str(row[product_id_col])
+
+        if product_id.endswith(".0"):
+            product_id = product_id[:-2]
+
+        try:
+            if level == "L1":
+                obj = client.load_l1(product_id, **load_kwargs)
+            elif level == "L0":
+                obj = client.load_l0(product_id, **load_kwargs)
+            else:
+                raise ValueError(f"Unsupported level: {level!r}. Use 'L1' or 'L0'.")
+
+            results.append({
+                "product_id": product_id,
+                "status": "SUCCESS",
+                "object": obj,
+                "error": "",
+            })
+
+        except Exception as exc:
+            record = {
+                "product_id": product_id,
+                "status": "FAILED",
+                "object": None,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+            results.append(record)
+
+            if not continue_on_error:
+                raise
+
+    return results

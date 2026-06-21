@@ -211,6 +211,67 @@ class InsulaClient:
     
 
 
+
+    def export_search_table_geojson(self, table, out_geojson):
+        """
+        Export a compact search table to GeoJSON.
+
+        This is useful to visualize search results in QGIS, geojson.io,
+        notebooks, or map-based tools.
+        """
+        from pyrawph.remote.search_table import export_search_table_geojson
+
+        return export_search_table_geojson(table, out_geojson)
+
+
+    def load_l1_table(
+        self,
+        table,
+        limit=None,
+        product_id_col="product_id",
+        continue_on_error=True,
+        **load_kwargs,
+    ):
+        """
+        Load/download L1 products listed in a compact search table.
+        """
+        from pyrawph.remote.search_table import load_products_from_table
+
+        return load_products_from_table(
+            self,
+            table,
+            level="L1",
+            limit=limit,
+            product_id_col=product_id_col,
+            continue_on_error=continue_on_error,
+            **load_kwargs,
+        )
+
+
+    def load_l0_table(
+        self,
+        table,
+        limit=None,
+        product_id_col="product_id",
+        continue_on_error=True,
+        **load_kwargs,
+    ):
+        """
+        Load/download L0 products listed in a compact search table.
+        """
+        from pyrawph.remote.search_table import load_products_from_table
+
+        return load_products_from_table(
+            self,
+            table,
+            level="L0",
+            limit=limit,
+            product_id_col=product_id_col,
+            continue_on_error=continue_on_error,
+            **load_kwargs,
+        )
+
+
     def search_l1_bbox_table(
         self,
         bbox_lonlat,

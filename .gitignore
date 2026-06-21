@@ -13,3 +13,6 @@ cache/
 outputs/
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
+
+# Local exploratory mangrove scripts
+scripts/*mangrove*.py

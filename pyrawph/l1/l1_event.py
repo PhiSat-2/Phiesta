@@ -1120,6 +1120,156 @@ class L1_event:
     
     
 
+
+    def to_cube(self, bands="all", band_axis=0, dtype=None, copy=True):
+        """
+        Return selected bands as a NumPy cube.
+
+        Args:
+            bands: "all", one band selector, or a sequence of selectors.
+            band_axis: 0 for (B, H, W), -1 for (H, W, B).
+            dtype: optional output dtype.
+            copy: whether to return a copy.
+        """
+        from pyrawph.utils.array_ops import to_cube
+
+        return to_cube(
+            self,
+            bands=bands,
+            band_axis=band_axis,
+            dtype=dtype,
+            copy=copy,
+        )
+
+
+    def get_patch(
+        self,
+        x_min,
+        y_min,
+        width=None,
+        height=None,
+        x_max=None,
+        y_max=None,
+        bands="all",
+        band_axis=0,
+        dtype=None,
+        squeeze=True,
+        clip=True,
+        copy=True,
+    ):
+        """
+        Extract a spatial patch from selected bands.
+
+        Args:
+            x_min, y_min: top-left pixel coordinates.
+            width, height: patch size.
+            x_max, y_max: optional exclusive bottom-right coordinates.
+            bands: "all", one band selector, or a sequence.
+            band_axis: output band axis for multi-band patches.
+            squeeze: if True and one band is selected, return 2D.
+            clip: clip the requested window to image bounds.
+            copy: whether to return a copy.
+        """
+        from pyrawph.utils.array_ops import get_patch
+
+        return get_patch(
+            self,
+            x_min=x_min,
+            y_min=y_min,
+            width=width,
+            height=height,
+            x_max=x_max,
+            y_max=y_max,
+            bands=bands,
+            band_axis=band_axis,
+            dtype=dtype,
+            squeeze=squeeze,
+            clip=clip,
+            copy=copy,
+        )
+
+
+    def normalize(
+        self,
+        array,
+        method="percentile",
+        percentiles=(1, 99),
+        per_band=True,
+        band_axis=0,
+        mask=None,
+        out_range=(0.0, 1.0),
+        dtype=None,
+    ):
+        """
+        Normalize a 2D band or 3D cube for display or ML preprocessing.
+
+        This is not physical radiometric calibration.
+        """
+        import numpy as np
+        from pyrawph.utils.array_ops import normalize_array
+
+        if dtype is None:
+            dtype = np.float32
+
+        return normalize_array(
+            array,
+            method=method,
+            percentiles=percentiles,
+            per_band=per_band,
+            band_axis=band_axis,
+            mask=mask,
+            out_range=out_range,
+            dtype=dtype,
+        )
+
+
+    def show_patch(
+        self,
+        x_min,
+        y_min,
+        width=None,
+        height=None,
+        x_max=None,
+        y_max=None,
+        bands=("RED", "GREEN", "BLUE"),
+        registered=False,
+        registration_master="NIR",
+        normalization="percentile",
+        percentiles=(1, 99),
+        per_band=True,
+        cmap="gray",
+        figsize=(7, 7),
+        title=None,
+        show=True,
+    ):
+        """
+        Display a spatial patch from the event.
+
+        Supports one band, three-band RGB composites, or grids for more bands.
+        """
+        from pyrawph.utils.array_ops import show_patch
+
+        return show_patch(
+            self,
+            x_min=x_min,
+            y_min=y_min,
+            width=width,
+            height=height,
+            x_max=x_max,
+            y_max=y_max,
+            bands=bands,
+            registered=registered,
+            registration_master=registration_master,
+            normalization=normalization,
+            percentiles=percentiles,
+            per_band=per_band,
+            cmap=cmap,
+            figsize=figsize,
+            title=title,
+            show=show,
+        )
+
+
     def show_event_info(self, *, show_stats=False, stats_sample=1_000_000):
         """
         Print a useful product overview.

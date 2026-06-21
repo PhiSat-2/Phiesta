@@ -763,29 +763,20 @@ class L0_event:
         rgb = np.clip((rgb - lo) / np.maximum(hi - lo, 1e-6), 0.0, 1.0)
         return rgb
 
-    def show_event_info(self) -> None:
+    def show_event_info(self, *, show_stats=False, stats_sample=1_000_000):
         """
-        Print a concise textual summary of the event.
+        Print a useful product overview.
 
-        The summary includes product path information, array shape and dtype, band
-        metadata, and key L0-specific acquisition fields such as band start rows and
-        line period.
-
-        Returns:
-            None.
+        Shows product identity, raster metadata, bands, catalog geometry,
+        local/remote paths, and common API calls.
         """
-        print("=== L0_event ===")
-        print(f"Product folder      : {self.product_folder}")
-        print(f"Scene ID            : {self.scene_id}")
-        print(f"Array shape         : {self.arr.shape}")
-        print(f"Dtype               : {self.arr.dtype}")
-        print(f"Band indices        : {self.meta.get('band_indices')}")
-        print(f"Band wavelengths nm : {self.meta.get('band_wavelength_nm')}")
-        print(f"Band start rows     : {self.meta.get('band_start_row')}")
-        print(f"Line period         : {self.meta.get('line_period')}")
-        print(f"Native space        : {self.meta.get('native_space')}")
-        print(f"Metadata path       : {self.meta.get('metadata_path')}")
-        print(f"Ancillary path      : {self.meta.get('ancillary_path')}")
+        from pyrawph.utils.event_info import show_event_info
+
+        return show_event_info(
+            self,
+            show_stats=show_stats,
+            stats_sample=stats_sample,
+        )
 
     def crop_px(self, y0: int, y1: int, x0: int, x1: int) -> "L0_event":
         """

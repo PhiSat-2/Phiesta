@@ -1120,31 +1120,21 @@ class L1_event:
     
     
 
-    def show_event_info(self) -> None:
+    def show_event_info(self, *, show_stats=False, stats_sample=1_000_000):
         """
-        Print a concise summary of the event.
+        Print a useful product overview.
 
-        The summary includes the scene identifier, product kind, folder and source path,
-        array shape and dtype, CRS, geographic bounds, band wavelengths, and the main
-        sidecar files if available.
-
-        Returns:
-            None.
+        Shows product identity, raster metadata, bands, catalog geometry,
+        local/remote paths, and common API calls.
         """
-        print(colored("Event:", "blue"), f"scene_id={self._scene_id} kind={self._product_kind}")
-        print("  folder:", colored(self._product_folder, "red"))
-        print("  path:", colored(str(self._meta.get("path", None)), "red"))
-        print("  shape:", colored(str(tuple(self._arr.shape)), "red"), "  dtype:", colored(str(self._arr.dtype), "red"))
-        print("  crs:", colored(str(self._meta.get("crs", None)), "red"))
-        print("  bounds:", colored(str(self._meta.get("bounds", None)), "red"))
-        print("  wavelengths_nm:", colored(str(self.get_wavelengths()), "red"))
-        print("  gl_path:", colored(str(self._meta.get("gl_path", None)), "red"))
-        print("  processing_config:", colored(str(self._meta.get("processing_config_path", None)), "red"))
-    
-    
-    
+        from pyrawph.utils.event_info import show_event_info
 
-    # export
+        return show_event_info(
+            self,
+            show_stats=show_stats,
+            stats_sample=stats_sample,
+        )
+
     def export_to_tif(
         self,
         out_path: str,

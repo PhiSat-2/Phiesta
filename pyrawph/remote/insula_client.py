@@ -209,6 +209,33 @@ class InsulaClient:
         )
         return data["features"]
     
+
+    def search_l1_table(self, *args, **kwargs):
+        """
+        Search L1 products and return a compact pandas DataFrame.
+
+        The table includes product id, filename, acquisition datetime, center,
+        and footprint corners when available.
+        """
+        from pyrawph.remote.search_table import search_result_to_dataframe
+
+        result = self.search_l1(*args, **kwargs)
+        return search_result_to_dataframe(result)
+
+
+    def search_l0_table(self, *args, **kwargs):
+        """
+        Search L0 products and return a compact pandas DataFrame.
+
+        The table includes product id, filename, acquisition datetime, center,
+        and footprint corners when available.
+        """
+        from pyrawph.remote.search_table import search_result_to_dataframe
+
+        result = self.search_l0(*args, **kwargs)
+        return search_result_to_dataframe(result)
+
+
     def load_l1(
         self,
         identifier: str,

@@ -8,3 +8,8 @@ __pycache__/
 *.pyc
 *.zip
 .venv_test/
+# Runtime/generated outputs
+cache/
+outputs/
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/

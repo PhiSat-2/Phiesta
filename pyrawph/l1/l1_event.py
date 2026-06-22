@@ -82,7 +82,7 @@ def _try_parse_product_times(product_folder: str) -> Tuple[Optional[str], Option
       ..._<YYYYMMDDhhmmss>_<YYYYMMDDhhmmss>_...
     Returns ISO-like strings (or None).
     """
-    base = os.path.basename(product_folder.rstrip("\\/"))
+    base = os.path.basename(str(product_folder).rstrip("\\/"))
     m = re.search(r"_(\d{14})_(\d{14})_", base)
     if not m:
         return None, None

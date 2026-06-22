@@ -1270,6 +1270,117 @@ class L1_event:
         )
 
 
+
+    def build_patch_index(
+        self,
+        patch_size=512,
+        stride=None,
+        x_min=0,
+        y_min=0,
+        x_max=None,
+        y_max=None,
+        include_partial=False,
+    ):
+        """
+        Build a regular pixel-window patch index over the event.
+        """
+        from pyrawph.utils.patchify import build_patch_index
+
+        return build_patch_index(
+            self,
+            patch_size=patch_size,
+            stride=stride,
+            x_min=x_min,
+            y_min=y_min,
+            x_max=x_max,
+            y_max=y_max,
+            include_partial=include_partial,
+        )
+
+
+    def iter_patches(
+        self,
+        index=None,
+        patch_size=512,
+        stride=None,
+        bands="all",
+        band_axis=0,
+        squeeze=True,
+        normalize=False,
+        normalize_kwargs=None,
+        include_metadata=True,
+        limit=None,
+        **index_kwargs,
+    ):
+        """
+        Iterate over patches extracted from the event.
+        """
+        from pyrawph.utils.patchify import iter_patches
+
+        return iter_patches(
+            self,
+            index=index,
+            patch_size=patch_size,
+            stride=stride,
+            bands=bands,
+            band_axis=band_axis,
+            squeeze=squeeze,
+            normalize=normalize,
+            normalize_kwargs=normalize_kwargs,
+            include_metadata=include_metadata,
+            limit=limit,
+            **index_kwargs,
+        )
+
+
+    def export_patches(
+        self,
+        out_dir,
+        index=None,
+        patch_size=512,
+        stride=None,
+        bands="all",
+        band_axis=0,
+        normalize=False,
+        normalize_kwargs=None,
+        dtype=None,
+        prefix="patch",
+        overwrite=False,
+        limit=None,
+        save_index=True,
+        **index_kwargs,
+    ):
+        """
+        Export patches as .npy files and return a patch index DataFrame.
+        """
+        from pyrawph.utils.patchify import export_patches
+
+        return export_patches(
+            self,
+            out_dir=out_dir,
+            index=index,
+            patch_size=patch_size,
+            stride=stride,
+            bands=bands,
+            band_axis=band_axis,
+            normalize=normalize,
+            normalize_kwargs=normalize_kwargs,
+            dtype=dtype,
+            prefix=prefix,
+            overwrite=overwrite,
+            limit=limit,
+            save_index=save_index,
+            **index_kwargs,
+        )
+
+
+    def patchify(self, *args, **kwargs):
+        """
+        Alias for export_patches().
+        """
+        return self.export_patches(*args, **kwargs)
+
+
     def show_event_info(self, *, show_stats=False, stats_sample=1_000_000):
         """
         Print a useful product overview.

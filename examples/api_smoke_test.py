@@ -37,6 +37,16 @@ def test_event_api(event):
     )
     print("patch normalized:", patch_norm.shape, float(np.nanmin(patch_norm)), float(np.nanmax(patch_norm)))
 
+    patch_index = event.build_patch_index(patch_size=1024, stride=1024)
+    print("patch index:", patch_index.shape)
+
+    first_patch = next(event.iter_patches(
+        index=patch_index.head(1),
+        bands=("NIR",),
+        squeeze=True,
+    ))
+    print("first indexed patch:", first_patch["patch_id"], first_patch["patch"].shape)
+
     print("\n=== band stats ===")
     stats = event.band_stats(
         bands=("BLUE", "GREEN", "RED", "NIR"),

@@ -483,3 +483,143 @@ OpenStreetMap / Sentinel-2 / weather context for a scene;
 patchify acquisitions into ML-ready datasets;
 generic image/cube input support beyond ΦSat-2 product folders;
 strict alignment modes for high-quality triplet generation.
+
+---
+
+## Build a patch index
+
+Create a regular grid of pixel windows over an acquisition:
+
+```python
+patch_index = event.build_patch_index(
+    patch_size=512,
+    stride=512,
+)
+
+patch_index.head()
+```
+
+The patch index contains:
+
+```text
+patch_id
+row
+col
+x_min
+y_min
+x_max
+y_max
+width
+height
+is_partial
+```
+
+Use overlapping patches:
+
+```python
+patch_index = event.build_patch_index(
+    patch_size=512,
+    stride=256,
+)
+```
+
+Restrict patching to a sub-window:
+
+```python
+patch_index = event.build_patch_index(
+    patch_size=512,
+    stride=512,
+    x_min=1000,
+    y_min=1000,
+    x_max=3000,
+    y_max=3000,
+)
+```
+
+---
+
+## Iterate over patches
+
+```python
+for item in event.iter_patches(
+    index=patch_index.head(3),
+    bands=("NIR", "RED", "GREEN"),
+    band_axis=-1,
+):
+    print(item["patch_id"], item["patch"].shape)
+```
+
+Each yielded item contains:
+
+```text
+patch_id
+patch
+window
+row
+```
+
+You can also normalize patches while iterating:
+
+```python
+for item in event.iter_patches(
+    index=patch_index.head(3),
+    bands=("RED", "GREEN", "BLUE"),
+    band_axis=-1,
+    normalize=True,
+    normalize_kwargs={
+        "percentiles": (1, 99),
+        "per_band": True,
+        "band_axis": -1,
+    },
+):
+    patch = item["patch"]
+```
+
+---
+
+## Export patches for ML experiments
+
+Export patches as `.npy` files:
+
+```python
+patch_table = event.export_patches(
+    out_dir="outputs/patches/5359_rgb",
+    patch_size=512,
+    stride=512,
+    bands=("RED", "GREEN", "BLUE"),
+    band_axis=-1,
+    normalize=True,
+    normalize_kwargs={
+        "percentiles": (1, 99),
+        "per_band": True,
+        "band_axis": -1,
+    },
+    prefix="rgb",
+    overwrite=True,
+)
+
+patch_table.head()
+```
+
+`export_patches()` writes:
+
+```text
+outputs/patches/5359_rgb/rgb_r0000_c0000.npy
+outputs/patches/5359_rgb/rgb_r0000_c0001.npy
+...
+outputs/patches/5359_rgb/rgb_index.csv
+```
+
+`patchify()` is an alias for `export_patches()`:
+
+```python
+patch_table = event.patchify(
+    out_dir="outputs/patches/5359_all",
+    patch_size=512,
+    stride=512,
+    bands="all",
+)
+```
+
+This export is intended for simple research and ML workflows. It does not claim georeferenced GeoTIFF output.
+

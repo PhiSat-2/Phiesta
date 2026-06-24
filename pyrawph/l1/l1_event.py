@@ -162,6 +162,60 @@ class L1_event:
         """
         return _build_sentinel_triplet(self, **kwargs)
     
+
+    def refine_triplet_georeference_strict(
+        self,
+        triplet,
+        source="simulated",
+        real_match_band="PAN",
+        source_match_band="PAN",
+        features="superpoint",
+        max_keypoints=12000,
+        matching_max_side=2600,
+        ransac_thresh=3.0,
+        min_matches=80,
+        min_inliers=150,
+        min_inlier_ratio=0.12,
+        mask_clouds=True,
+        mask_water=True,
+        mask_low_texture=True,
+        min_texture_percentile=20.0,
+        refinement_rounds=2,
+        out_dir=None,
+        overwrite=True,
+        verbose=True,
+    ):
+        """
+        Refine final triplet georeference using whole-acquisition LightGlue matching.
+
+        This estimates a residual homography from the already-warped
+        Sentinel/simulated triplet grid to the real PhiSat-2 grid.
+        """
+        from pyrawph.triplets.strict_georef import refine_triplet_georeference_strict
+
+        return refine_triplet_georeference_strict(
+            triplet,
+            source=source,
+            real_match_band=real_match_band,
+            source_match_band=source_match_band,
+            features=features,
+            max_keypoints=max_keypoints,
+            matching_max_side=matching_max_side,
+            ransac_thresh=ransac_thresh,
+            min_matches=min_matches,
+            min_inliers=min_inliers,
+            min_inlier_ratio=min_inlier_ratio,
+            mask_clouds=mask_clouds,
+            mask_water=mask_water,
+            mask_low_texture=mask_low_texture,
+            min_texture_percentile=min_texture_percentile,
+            refinement_rounds=refinement_rounds,
+            out_dir=out_dir,
+            overwrite=overwrite,
+            verbose=verbose,
+        )
+
+
     def build_full_sentinel_triplet(self, **kwargs):
         """
         Build a full pixel-aligned Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet.

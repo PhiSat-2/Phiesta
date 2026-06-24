@@ -61,3 +61,5 @@ from .full_pipeline import build_full_sentinel_triplet
 from .visualization import show_full_triplet, inspect_full_triplet, valid_fraction
 
 from .batch import build_full_sentinel_triplets_batch
+from .strict_georef import refine_triplet_georeference_strict
+

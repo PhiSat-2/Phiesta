@@ -800,3 +800,96 @@ def refine_triplet_georeference_strict(
         "H_s2_to_real_strict": report["H_s2_to_real_strict"],
         "H_sim_to_real_strict": report["H_sim_to_real_strict"],
     }
+
+
+def inspect_strict_georef(
+    strict_or_report,
+    *,
+    print_report: bool = True,
+) -> dict:
+    """
+    Inspect a strict georeference refinement report.
+
+    Args:
+        strict_or_report: either:
+            - dict returned by refine_triplet_georeference_strict(...)
+            - path to strict_georef_report_*.json
+        print_report: print a compact human-readable summary.
+
+    Returns:
+        Compact summary dictionary.
+    """
+    if isinstance(strict_or_report, (str, Path)):
+        report_path = Path(strict_or_report)
+        with report_path.open("r", encoding="utf-8") as f:
+            report = json.load(f)
+    elif isinstance(strict_or_report, dict):
+        report = strict_or_report.get("report", strict_or_report)
+        report_path = strict_or_report.get("report_path")
+    else:
+        raise TypeError(f"Unsupported input type: {type(strict_or_report)}")
+
+    metrics = report.get("metrics", {})
+    H = np.asarray(report.get("H_residual_source_to_real"), dtype=np.float64)
+
+    if H.shape != (3, 3):
+        raise ValueError("Report does not contain a valid H_residual_source_to_real.")
+
+    tx = float(H[0, 2])
+    ty = float(H[1, 2])
+    sx = float(np.sqrt(H[0, 0] ** 2 + H[1, 0] ** 2))
+    sy = float(np.sqrt(H[0, 1] ** 2 + H[1, 1] ** 2))
+    shear_like = float(abs(H[0, 1]) + abs(H[1, 0]))
+    perspective_like = float(abs(H[2, 0]) + abs(H[2, 1]))
+
+    inliers = int(metrics.get("inliers", 0))
+    median = float(metrics.get("error_median_px", np.inf))
+    p90 = float(metrics.get("error_p90_px", np.inf))
+    ratio = float(metrics.get("inlier_ratio", 0.0))
+
+    if inliers >= 200 and median <= 4.0 and p90 <= 6.0:
+        quality = "GOOD"
+    elif inliers >= 100 and median <= 5.0 and p90 <= 8.0:
+        quality = "OK"
+    else:
+        quality = "RISKY"
+
+    summary = {
+        "quality": quality,
+        "source": report.get("source"),
+        "features": report.get("features"),
+        "inliers": inliers,
+        "inlier_ratio": ratio,
+        "error_median_px": median,
+        "error_p90_px": p90,
+        "error_p95_px": float(metrics.get("error_p95_px", np.inf)),
+        "translation_px": {"x": tx, "y": ty},
+        "scale_approx": {"x": sx, "y": sy},
+        "shear_like": shear_like,
+        "perspective_like": perspective_like,
+        "preview": report.get("paths", {}).get("preview"),
+        "sentinel_strict": report.get("paths", {}).get("sentinel_strict"),
+        "simulated_strict": report.get("paths", {}).get("simulated_strict"),
+    }
+
+    if print_report:
+        print("\n" + "=" * 80)
+        print("Strict georeference inspection")
+        print("=" * 80)
+        print(f"quality              : {quality}")
+        print(f"source               : {summary['source']}")
+        print(f"features             : {summary['features']}")
+        print(f"inliers              : {inliers}")
+        print(f"inlier_ratio          : {ratio:.3f}")
+        print(f"median error          : {median:.3f} px")
+        print(f"p90 error             : {p90:.3f} px")
+        print(f"p95 error             : {summary['error_p95_px']:.3f} px")
+        print(f"translation           : x={tx:.2f}px, y={ty:.2f}px")
+        print(f"scale approx          : x={sx:.5f}, y={sy:.5f}")
+        print(f"shear-like            : {shear_like:.6f}")
+        print(f"perspective-like      : {perspective_like:.8f}")
+        print(f"preview               : {summary['preview']}")
+        print(f"sentinel strict       : {summary['sentinel_strict']}")
+        print(f"simulated strict      : {summary['simulated_strict']}")
+
+    return summary

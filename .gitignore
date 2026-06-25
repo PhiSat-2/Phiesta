@@ -16,3 +16,4 @@ outputs/
 
 # Local exploratory mangrove scripts
 scripts/*mangrove*.py
+*.egg-info/

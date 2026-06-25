@@ -36,7 +36,7 @@ from .phisat2_utils import (
 from .phisat2_constants import S2_RESOLUTION, PHISAT2_RESOLUTION, ProcessingLevels
 
 
-PYRAWPH_CROP_BAND_ORDER = [
+PHIESTA_CROP_BAND_ORDER = [
     "B02",  # BLUE
     "B03",  # GREEN
     "B04",  # RED
@@ -123,7 +123,7 @@ class SimulationPipeline:
         s2_tiff_path: Path | str,
         metadata: dict,
     ) -> datetime:
-        """Prefer PyRawPh metadata, then legacy metadata, then now()."""
+        """Prefer Phiesta metadata, then legacy metadata, then now()."""
         if isinstance(metadata, dict):
             dt_str = metadata.get("s2_datetime") or metadata.get("acquisition_datetime")
             if dt_str is not None:
@@ -140,9 +140,9 @@ class SimulationPipeline:
 
         return datetime.now()
 
-    def _inject_pyrawph_metadata(self, eopatch: EOPatch, metadata: dict, spatial_shape) -> bool:
+    def _inject_phiesta_metadata(self, eopatch: EOPatch, metadata: dict, spatial_shape) -> bool:
         """
-        Inject metadata already extracted by PyRawPh.
+        Inject metadata already extracted by Phiesta.
 
         This is intentionally defensive because the vendored phisat2_utils tasks
         may look for metadata under slightly different names.
@@ -215,7 +215,7 @@ class SimulationPipeline:
             raise ValueError(f"Expected rasterio array with shape (C,H,W), got {s2_data.shape}")
 
         if s2_data.shape[0] == 7:
-            # PyRawPh crop already has the exact expected order.
+            # Phiesta crop already has the exact expected order.
             return s2_data
 
         if s2_data.shape[0] >= 8:
@@ -224,7 +224,7 @@ class SimulationPipeline:
             return s2_data[band_indices, :, :]
 
         raise ValueError(
-            "Expected a 7-band PyRawPh crop or an >=8-band Sentinel stack, "
+            "Expected a 7-band Phiesta crop or an >=8-band Sentinel stack, "
             f"got shape {s2_data.shape}"
         )
 
@@ -238,10 +238,10 @@ class SimulationPipeline:
         Apply the PhiSat-2 simulation pipeline to one Sentinel-2 crop.
 
         Args:
-            s2_tiff_path: Sentinel-2 GeoTIFF. For PyRawPh, expected order is
+            s2_tiff_path: Sentinel-2 GeoTIFF. For Phiesta, expected order is
                 B02, B03, B04, B08, B05, B06, B07.
             output_tiff_path: Output simulated PhiSat-2 GeoTIFF.
-            metadata: PyRawPh metadata JSON dictionary.
+            metadata: Phiesta metadata JSON dictionary.
 
         Returns:
             True if successful, False otherwise.
@@ -287,7 +287,7 @@ class SimulationPipeline:
 
             eopatch[FeatureType.DATA, "S2_BANDS"] = s2_data[np.newaxis, :, :, :]
 
-            metadata_injected = self._inject_pyrawph_metadata(
+            metadata_injected = self._inject_phiesta_metadata(
                 eopatch=eopatch,
                 metadata=metadata,
                 spatial_shape=s2_data.shape[:2],
@@ -303,7 +303,7 @@ class SimulationPipeline:
                     print("Skipping radiance conversion because metadata is missing.")
                     self.config.steps.radiance = False
                 else:
-                    print("Continuing with PyRawPh-provided metadata.")
+                    print("Continuing with Phiesta-provided metadata.")
 
             # Radiance conversion
             if self.config.steps.radiance:
@@ -481,7 +481,7 @@ class SimulationPipeline:
         Apply simulation to all Sentinel-2 TIFF files in a source directory.
 
         This method is kept for compatibility with the original scripts.
-        PyRawPh mainly uses simulate_single_file(...).
+        Phiesta mainly uses simulate_single_file(...).
         """
         source_dir = Path(source_dir or self.config.s2_source_dir)
         results = {"successful": [], "failed": []}

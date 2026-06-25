@@ -62,7 +62,7 @@ def crop_sentinel_window(
 
     if out_tif.exists() and out_json.exists() and not overwrite:
         if verbose:
-            print(f"[PyRawPh] Reusing final Sentinel crop: {out_tif}")
+            print(f"[Phiesta] Reusing final Sentinel crop: {out_tif}")
 
         return {
             "status": "ALREADY_EXISTS",
@@ -140,11 +140,11 @@ def crop_sentinel_window(
         json.dump(meta, f, indent=2)
 
     if verbose:
-        print("[PyRawPh] Final Sentinel crop saved")
-        print(f"[PyRawPh] source: {sentinel_big_crop_path}")
-        print(f"[PyRawPh] output: {out_tif}")
-        print(f"[PyRawPh] metadata: {out_json}")
-        print(f"[PyRawPh] shape: count={data.shape[0]}, height={height}, width={width}")
+        print("[Phiesta] Final Sentinel crop saved")
+        print(f"[Phiesta] source: {sentinel_big_crop_path}")
+        print(f"[Phiesta] output: {out_tif}")
+        print(f"[Phiesta] metadata: {out_json}")
+        print(f"[Phiesta] shape: count={data.shape[0]}, height={height}, width={width}")
 
     return {
         "status": "SUCCESS",

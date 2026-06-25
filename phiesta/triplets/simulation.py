@@ -27,7 +27,7 @@ def _ensure_orbitalai_vendor_importable() -> None:
     Make the vendored OrbitalAI simulation package importable.
 
     This is needed when running scripts from examples/, where Python's sys.path
-    may not include the repository root even if pyrawph itself is installed in
+    may not include the repository root even if phiesta itself is installed in
     editable mode.
     """
     repo_root = Path(__file__).resolve().parents[2]
@@ -43,7 +43,7 @@ def _ensure_simulation_metadata_alias(metadata_path: str | Path) -> Path:
     Some older scripts expect:
         <product_id>_S2B_metadata.json
 
-    PyRawPh writes:
+    Phiesta writes:
         <product_id>_s2b_metadata.json
 
     This helper creates the expected alias if needed.
@@ -136,7 +136,7 @@ def simulate_phisat2_from_sentinel_crop(
 
     if expected_output.exists() and not overwrite:
         if verbose:
-            print(f"[PyRawPh] Reusing simulated PhiSat-2 product: {expected_output}")
+            print(f"[Phiesta] Reusing simulated PhiSat-2 product: {expected_output}")
 
         return SimulationResult(
             simulated_path=str(expected_output),
@@ -155,9 +155,9 @@ def simulate_phisat2_from_sentinel_crop(
     expected_metadata = _ensure_simulation_metadata_alias(metadata_path)
 
     if verbose:
-        print(f"[PyRawPh] Simulating PhiSat-2 from Sentinel crop: {crop_path}")
-        print(f"[PyRawPh] Simulation metadata: {expected_metadata}")
-        print(f"[PyRawPh] PhiSat-2 executable: {exec_path}")
+        print(f"[Phiesta] Simulating PhiSat-2 from Sentinel crop: {crop_path}")
+        print(f"[Phiesta] Simulation metadata: {expected_metadata}")
+        print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
 
     _ensure_orbitalai_vendor_importable()
 
@@ -207,7 +207,7 @@ def simulate_phisat2_from_sentinel_crop(
         )
 
     if verbose:
-        print(f"[PyRawPh] Simulated PhiSat-2 product saved: {expected_output}")
+        print(f"[Phiesta] Simulated PhiSat-2 product saved: {expected_output}")
 
     return SimulationResult(
         simulated_path=str(expected_output),

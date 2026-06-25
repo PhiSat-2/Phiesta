@@ -159,12 +159,12 @@ def rectify_simulated_catalog_crop(
             dst.descriptions = descriptions
 
     if verbose:
-        print("[PyRawPh] Rectified simulated catalog crop")
-        print(f"[PyRawPh] source: {simulated_path}")
-        print(f"[PyRawPh] output: {output_path}")
-        print(f"[PyRawPh] output_shape: {(out_h, out_w)}")
-        print(f"[PyRawPh] flip_horizontal: {flip_horizontal}")
-        print(f"[PyRawPh] src_quad_px:\n{src_quad}")
+        print("[Phiesta] Rectified simulated catalog crop")
+        print(f"[Phiesta] source: {simulated_path}")
+        print(f"[Phiesta] output: {output_path}")
+        print(f"[Phiesta] output_shape: {(out_h, out_w)}")
+        print(f"[Phiesta] flip_horizontal: {flip_horizontal}")
+        print(f"[Phiesta] src_quad_px:\n{src_quad}")
 
     return {
         "status": "SUCCESS",

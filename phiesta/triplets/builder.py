@@ -147,13 +147,13 @@ def build_sentinel_triplet(
     )
 
     if verbose:
-        print(f"[PyRawPh] Initialized triplet workspace: {paths.root_dir}")
-        print(f"[PyRawPh] PhiSat-2 executable: {exec_path}")
+        print(f"[Phiesta] Initialized triplet workspace: {paths.root_dir}")
+        print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
 
     if run_sentinel_source:
         if verbose:
             print(
-                f"[PyRawPh] Searching {satellite} source "
+                f"[Phiesta] Searching {satellite} source "
                 f"(±{window_days}d, cloud<={max_cloud_cover}%, buffer={buffer_km} km)"
             )
 
@@ -184,7 +184,7 @@ def build_sentinel_triplet(
 
         if verbose:
             print(
-                "[PyRawPh] Sentinel source found: "
+                "[Phiesta] Sentinel source found: "
                 f"{source.satellite}, delta={source.delta_days}d, "
                 f"cloud={source.cloud_cover}%, coverage={source.coverage}%"
             )
@@ -194,7 +194,7 @@ def build_sentinel_triplet(
             raise ValueError("Cannot run Sentinel crop before Sentinel source selection.")
 
         if verbose:
-            print("[PyRawPh] Building Sentinel-2B crop")
+            print("[Phiesta] Building Sentinel-2B crop")
 
         crop = create_sentinel_crop(
             event=event,
@@ -228,7 +228,7 @@ def build_sentinel_triplet(
             raise ValueError("Cannot run simulation before Sentinel crop creation.")
 
         if verbose:
-            print("[PyRawPh] Running PhiSat-2 simulation")
+            print("[Phiesta] Running PhiSat-2 simulation")
 
         simulation = simulate_phisat2_from_sentinel_crop(
             crop=triplet.sentinel_crop,

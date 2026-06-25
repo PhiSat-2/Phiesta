@@ -151,10 +151,10 @@ def warp_final_triplet_to_real_grid(
     real_transform = _ensure_affine(real_meta.get("transform"))
 
     if verbose:
-        print("[PyRawPh] Warping final triplet to real PhiSat-2 grid")
-        print(f"[PyRawPh] real shape: ({real_h}, {real_w})")
-        print(f"[PyRawPh] final_sentinel_crop: {final_sentinel_crop_path}")
-        print(f"[PyRawPh] final_simulated: {final_simulated_path}")
+        print("[Phiesta] Warping final triplet to real PhiSat-2 grid")
+        print(f"[Phiesta] real shape: ({real_h}, {real_w})")
+        print(f"[Phiesta] final_sentinel_crop: {final_sentinel_crop_path}")
+        print(f"[Phiesta] final_simulated: {final_simulated_path}")
 
     with rasterio.open(final_sentinel_crop_path) as src_s2:
         s2_data = src_s2.read()
@@ -227,13 +227,13 @@ def warp_final_triplet_to_real_grid(
     )
 
     if verbose:
-        print("[PyRawPh] s2_local_corners:")
+        print("[Phiesta] s2_local_corners:")
         print(s2_local_corners)
-        print("[PyRawPh] sim_local_corners:")
+        print("[Phiesta] sim_local_corners:")
         print(sim_local_corners)
-        print("[PyRawPh] H_s2_to_real:")
+        print("[Phiesta] H_s2_to_real:")
         print(H_s2_to_real)
-        print("[PyRawPh] H_sim_to_real:")
+        print("[Phiesta] H_sim_to_real:")
         print(H_sim_to_real)
 
     s2_warped = _warp_stack(s2_data, H_s2_to_real, real_w, real_h, interpolation=cv2.INTER_LINEAR)
@@ -288,10 +288,10 @@ def warp_final_triplet_to_real_grid(
     meta_out.write_text(json.dumps(result, indent=2))
 
     if verbose:
-        print("[PyRawPh] Final triplet saved")
-        print(f"[PyRawPh] real:      {real_out}")
-        print(f"[PyRawPh] sentinel:  {s2_out}")
-        print(f"[PyRawPh] simulated: {sim_out}")
-        print(f"[PyRawPh] metadata:  {meta_out}")
+        print("[Phiesta] Final triplet saved")
+        print(f"[Phiesta] real:      {real_out}")
+        print(f"[Phiesta] sentinel:  {s2_out}")
+        print(f"[Phiesta] simulated: {sim_out}")
+        print(f"[Phiesta] metadata:  {meta_out}")
 
     return result

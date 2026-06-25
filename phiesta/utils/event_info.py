@@ -206,7 +206,7 @@ def show_event_info(
     stats_sample: int | None = 1_000_000,
 ) -> None:
     """
-    Print a useful overview of a PyRawPh event.
+    Print a useful overview of a Phiesta event.
 
     This user-facing helper shows product identity, raster metadata, band
     information, Insula catalog geometry, local/remote paths, and common API
@@ -220,7 +220,7 @@ def show_event_info(
     filename = _guess_filename(meta, event)
     count, height, width = _shape_info(event, meta)
 
-    _print_section("PyRawPh product overview")
+    _print_section("Phiesta product overview")
     _print_kv("object", klass)
     _print_kv("product_id", product_id)
     _print_kv("filename", filename)

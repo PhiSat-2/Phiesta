@@ -94,7 +94,7 @@ def build_full_sentinel_triplets_batch(
     Parameters
     ----------
     client:
-        PyRawPh Insula client, typically returned by connect_insula().
+        Phiesta Insula client, typically returned by connect_insula().
     product_ids:
         Acquisition identifiers, e.g. ["5359", "5095"].
     output_root:
@@ -129,10 +129,10 @@ def build_full_sentinel_triplets_batch(
     full_results: dict[str, Any] = {}
 
     if verbose:
-        print("[PyRawPh] Starting full triplet batch")
-        print(f"[PyRawPh] product_ids={product_ids}")
-        print(f"[PyRawPh] output_root={output_root}")
-        print(f"[PyRawPh] batch_output_dir={batch_output_dir}")
+        print("[Phiesta] Starting full triplet batch")
+        print(f"[Phiesta] product_ids={product_ids}")
+        print(f"[Phiesta] output_root={output_root}")
+        print(f"[Phiesta] batch_output_dir={batch_output_dir}")
 
     for i, pid in enumerate(product_ids, start=1):
         t0 = time.time()
@@ -140,7 +140,7 @@ def build_full_sentinel_triplets_batch(
         if verbose:
             print()
             print("=" * 80)
-            print(f"[PyRawPh] [{i}/{len(product_ids)}] Building product_id={pid}")
+            print(f"[Phiesta] [{i}/{len(product_ids)}] Building product_id={pid}")
             print("=" * 80)
 
         try:
@@ -159,7 +159,7 @@ def build_full_sentinel_triplets_batch(
             full_results[pid] = result
 
             if verbose:
-                print(f"[PyRawPh] SUCCESS product_id={pid}")
+                print(f"[Phiesta] SUCCESS product_id={pid}")
 
         except Exception as exc:
             elapsed_s = time.time() - t0
@@ -175,8 +175,8 @@ def build_full_sentinel_triplets_batch(
             }
 
             if verbose:
-                print(f"[PyRawPh] FAILED product_id={pid}")
-                print(f"[PyRawPh] error={type(exc).__name__}: {exc}")
+                print(f"[Phiesta] FAILED product_id={pid}")
+                print(f"[Phiesta] error={type(exc).__name__}: {exc}")
 
             if not continue_on_error:
                 raise
@@ -206,13 +206,13 @@ def build_full_sentinel_triplets_batch(
     if verbose:
         print()
         print("=" * 80)
-        print("[PyRawPh] Batch complete")
-        print(f"[PyRawPh] success={summary['num_success']} failed={summary['num_failed']}")
-        print(f"[PyRawPh] elapsed_batch_s={elapsed_batch_s:.1f}")
-        print(f"[PyRawPh] summary_csv={summary_csv}")
-        print(f"[PyRawPh] summary_json={summary_json}")
+        print("[Phiesta] Batch complete")
+        print(f"[Phiesta] success={summary['num_success']} failed={summary['num_failed']}")
+        print(f"[Phiesta] elapsed_batch_s={elapsed_batch_s:.1f}")
+        print(f"[Phiesta] summary_csv={summary_csv}")
+        print(f"[Phiesta] summary_json={summary_json}")
         if save_full_results_json:
-            print(f"[PyRawPh] full_results_json={full_json}")
+            print(f"[Phiesta] full_results_json={full_json}")
 
     return {
         **summary,

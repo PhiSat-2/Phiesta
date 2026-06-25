@@ -187,7 +187,7 @@ def normalize_l1_product_layout(
 ) -> Path:
     """
     Normalize a legacy or non-canonical PHISAT-2 L1 product layout into the
-    canonical PyRawPh layout.
+    canonical Phiesta layout.
 
     The canonical layout is:
 

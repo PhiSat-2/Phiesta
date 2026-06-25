@@ -91,7 +91,7 @@ class L0_event:
     (C, H, W) and associated metadata.
 
     This class is the main entry point for working with raw ΦSat-2 L0 data inside
-    PyRawPh. It provides:
+    Phiesta. It provides:
     - loading from a local product folder,
     - access to spectral bands by index, wavelength, or alias,
     - conversion to NumPy or PyTorch,
@@ -136,7 +136,7 @@ class L0_event:
         """
         Show the Insula catalog footprint on a Sentinel-2 mosaic.
 
-        If no mosaic_path is provided, PyRawPh automatically builds or reuses one.
+        If no mosaic_path is provided, Phiesta automatically builds or reuses one.
         """
         if "mosaic_path" not in kwargs:
             cached = self.meta.get("sentinel_mosaic_path")
@@ -502,7 +502,7 @@ class L0_event:
     ) -> Union["L0_event", Path]:
         """
         Search remote PHISAT-2 L0 products on Insula, download one result, and
-        optionally convert it into a PyRawPh-readable local product.
+        optionally convert it into a Phiesta-readable local product.
 
         This is the low-level remote-search constructor. For high-level usage,
         prefer `client.search_l0(...)` followed by `client.load_l0(...)`.
@@ -774,7 +774,7 @@ class L0_event:
             dtype: optional output dtype.
             copy: whether to return a copy.
         """
-        from pyrawph.utils.array_ops import to_cube
+        from phiesta.utils.array_ops import to_cube
 
         return to_cube(
             self,
@@ -813,7 +813,7 @@ class L0_event:
             clip: clip the requested window to image bounds.
             copy: whether to return a copy.
         """
-        from pyrawph.utils.array_ops import get_patch
+        from phiesta.utils.array_ops import get_patch
 
         return get_patch(
             self,
@@ -849,7 +849,7 @@ class L0_event:
         This is not physical radiometric calibration.
         """
         import numpy as np
-        from pyrawph.utils.array_ops import normalize_array
+        from phiesta.utils.array_ops import normalize_array
 
         if dtype is None:
             dtype = np.float32
@@ -890,7 +890,7 @@ class L0_event:
 
         Supports one band, three-band RGB composites, or grids for more bands.
         """
-        from pyrawph.utils.array_ops import show_patch
+        from phiesta.utils.array_ops import show_patch
 
         return show_patch(
             self,
@@ -927,7 +927,7 @@ class L0_event:
         """
         Build a regular pixel-window patch index over the event.
         """
-        from pyrawph.utils.patchify import build_patch_index
+        from phiesta.utils.patchify import build_patch_index
 
         return build_patch_index(
             self,
@@ -958,7 +958,7 @@ class L0_event:
         """
         Iterate over patches extracted from the event.
         """
-        from pyrawph.utils.patchify import iter_patches
+        from phiesta.utils.patchify import iter_patches
 
         return iter_patches(
             self,
@@ -996,7 +996,7 @@ class L0_event:
         """
         Export patches as .npy files and return a patch index DataFrame.
         """
-        from pyrawph.utils.patchify import export_patches
+        from phiesta.utils.patchify import export_patches
 
         return export_patches(
             self,
@@ -1031,7 +1031,7 @@ class L0_event:
         Shows product identity, raster metadata, bands, catalog geometry,
         local/remote paths, and common API calls.
         """
-        from pyrawph.utils.event_info import show_event_info
+        from phiesta.utils.event_info import show_event_info
 
         return show_event_info(
             self,

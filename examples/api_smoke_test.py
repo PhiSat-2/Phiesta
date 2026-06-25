@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyrawph import L1_event, connect_insula
+from phiesta import L1_event, connect_insula
 
 
 def test_event_api(event):

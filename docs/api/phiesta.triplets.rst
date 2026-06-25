@@ -1,101 +1,101 @@
-pyrawph.triplets package
+phiesta.triplets package
 ========================
 
 Submodules
 ----------
 
-pyrawph.triplets.batch module
+phiesta.triplets.batch module
 -----------------------------
 
-.. automodule:: pyrawph.triplets.batch
+.. automodule:: phiesta.triplets.batch
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.builder module
+phiesta.triplets.builder module
 -------------------------------
 
-.. automodule:: pyrawph.triplets.builder
+.. automodule:: phiesta.triplets.builder
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.final_warp module
+phiesta.triplets.final_warp module
 ----------------------------------
 
-.. automodule:: pyrawph.triplets.final_warp
+.. automodule:: phiesta.triplets.final_warp
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.full_pipeline module
+phiesta.triplets.full_pipeline module
 -------------------------------------
 
-.. automodule:: pyrawph.triplets.full_pipeline
+.. automodule:: phiesta.triplets.full_pipeline
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.proxy_alignment module
+phiesta.triplets.proxy_alignment module
 ---------------------------------------
 
-.. automodule:: pyrawph.triplets.proxy_alignment
+.. automodule:: phiesta.triplets.proxy_alignment
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.rectification module
+phiesta.triplets.rectification module
 -------------------------------------
 
-.. automodule:: pyrawph.triplets.rectification
+.. automodule:: phiesta.triplets.rectification
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.sentinel_crop module
+phiesta.triplets.sentinel_crop module
 -------------------------------------
 
-.. automodule:: pyrawph.triplets.sentinel_crop
+.. automodule:: phiesta.triplets.sentinel_crop
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.sentinel_source module
+phiesta.triplets.sentinel_source module
 ---------------------------------------
 
-.. automodule:: pyrawph.triplets.sentinel_source
+.. automodule:: phiesta.triplets.sentinel_source
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.sentinel_window_crop module
+phiesta.triplets.sentinel_window_crop module
 --------------------------------------------
 
-.. automodule:: pyrawph.triplets.sentinel_window_crop
+.. automodule:: phiesta.triplets.sentinel_window_crop
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.simulation module
+phiesta.triplets.simulation module
 ----------------------------------
 
-.. automodule:: pyrawph.triplets.simulation
+.. automodule:: phiesta.triplets.simulation
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.visualization module
+phiesta.triplets.visualization module
 -------------------------------------
 
-.. automodule:: pyrawph.triplets.visualization
+.. automodule:: phiesta.triplets.visualization
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.triplets.window_from_proxy module
+phiesta.triplets.window_from_proxy module
 -----------------------------------------
 
-.. automodule:: pyrawph.triplets.window_from_proxy
+.. automodule:: phiesta.triplets.window_from_proxy
    :members:
    :undoc-members:
    :show-inheritance:
@@ -103,7 +103,7 @@ pyrawph.triplets.window_from_proxy module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.triplets
+.. automodule:: phiesta.triplets
    :members:
    :undoc-members:
    :show-inheritance:

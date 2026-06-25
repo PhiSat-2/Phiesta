@@ -1,4 +1,4 @@
-pyrawph package
+phiesta package
 ===============
 
 Subpackages
@@ -7,20 +7,20 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   pyrawph.l0
-   pyrawph.l1
-   pyrawph.remote
-   pyrawph.georef
-   pyrawph.triplets
-   pyrawph.utils
+   phiesta.l0
+   phiesta.l1
+   phiesta.remote
+   phiesta.georef
+   phiesta.triplets
+   phiesta.utils
 
 Submodules
 ----------
 
-pyrawph.sys_cfg module
+phiesta.sys_cfg module
 ----------------------
 
-.. automodule:: pyrawph.sys_cfg
+.. automodule:: phiesta.sys_cfg
    :members:
    :undoc-members:
    :show-inheritance:
@@ -28,7 +28,7 @@ pyrawph.sys_cfg module
 Module contents
 ---------------
 
-.. automodule:: pyrawph
+.. automodule:: phiesta
    :members:
    :undoc-members:
    :show-inheritance:

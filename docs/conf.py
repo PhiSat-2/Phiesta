@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'PyRawPh-Light'
+project = 'Phiesta'
 copyright = '2026, Malo de Pastor'
 author = 'Malo de Pastor'
 

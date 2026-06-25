@@ -174,12 +174,12 @@ def estimate_final_sentinel_window_from_proxy(
     }
 
     if verbose:
-        print("[PyRawPh] Estimated final Sentinel window from proxy alignment")
-        print(f"[PyRawPh] big crop shape: {(big_h, big_w)}")
-        print(f"[PyRawPh] proxy shape: {(proxy_h, proxy_w)}")
-        print(f"[PyRawPh] real shape: {(real_h, real_w)}")
-        print(f"[PyRawPh] window_native: {window_native}")
-        print(f"[PyRawPh] clipped_to_big_crop: {clipped}")
-        print(f"[PyRawPh] big_corners_px:\n{big_corners}")
+        print("[Phiesta] Estimated final Sentinel window from proxy alignment")
+        print(f"[Phiesta] big crop shape: {(big_h, big_w)}")
+        print(f"[Phiesta] proxy shape: {(proxy_h, proxy_w)}")
+        print(f"[Phiesta] real shape: {(real_h, real_w)}")
+        print(f"[Phiesta] window_native: {window_native}")
+        print(f"[Phiesta] clipped_to_big_crop: {clipped}")
+        print(f"[Phiesta] big_corners_px:\n{big_corners}")
 
     return result

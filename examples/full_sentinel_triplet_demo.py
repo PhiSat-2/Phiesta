@@ -1,4 +1,4 @@
-from pyrawph import connect_insula
+from phiesta import connect_insula
 
 client = connect_insula()
 

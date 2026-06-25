@@ -219,7 +219,7 @@ class InsulaClient:
         This is useful to visualize search results in QGIS, geojson.io,
         notebooks, or map-based tools.
         """
-        from pyrawph.remote.search_table import export_search_table_geojson
+        from phiesta.remote.search_table import export_search_table_geojson
 
         return export_search_table_geojson(table, out_geojson)
 
@@ -235,7 +235,7 @@ class InsulaClient:
         """
         Load/download L1 products listed in a compact search table.
         """
-        from pyrawph.remote.search_table import load_products_from_table
+        from phiesta.remote.search_table import load_products_from_table
 
         return load_products_from_table(
             self,
@@ -259,7 +259,7 @@ class InsulaClient:
         """
         Load/download L0 products listed in a compact search table.
         """
-        from pyrawph.remote.search_table import load_products_from_table
+        from phiesta.remote.search_table import load_products_from_table
 
         return load_products_from_table(
             self,
@@ -288,7 +288,7 @@ class InsulaClient:
             results_per_page: number of products per page.
             **search_kwargs: extra arguments forwarded to search_l1.
         """
-        from pyrawph.remote.search_table import search_bbox_table
+        from phiesta.remote.search_table import search_bbox_table
 
         return search_bbox_table(
             self,
@@ -316,7 +316,7 @@ class InsulaClient:
             results_per_page: number of products per page.
             **search_kwargs: extra arguments forwarded to search_l0.
         """
-        from pyrawph.remote.search_table import search_bbox_table
+        from phiesta.remote.search_table import search_bbox_table
 
         return search_bbox_table(
             self,
@@ -335,7 +335,7 @@ class InsulaClient:
         The table includes product id, filename, acquisition datetime, center,
         and footprint corners when available.
         """
-        from pyrawph.remote.search_table import search_result_to_dataframe
+        from phiesta.remote.search_table import search_result_to_dataframe
 
         result = self.search_l1(*args, **kwargs)
         return search_result_to_dataframe(result)
@@ -348,7 +348,7 @@ class InsulaClient:
         The table includes product id, filename, acquisition datetime, center,
         and footprint corners when available.
         """
-        from pyrawph.remote.search_table import search_result_to_dataframe
+        from phiesta.remote.search_table import search_result_to_dataframe
 
         result = self.search_l0(*args, **kwargs)
         return search_result_to_dataframe(result)

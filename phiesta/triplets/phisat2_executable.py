@@ -40,13 +40,13 @@ def resolve_phisat2_executable(phisat2_exec_path: str | Path | None = None) -> P
 
     Priority:
     1. explicit argument
-    2. PYRAWPH_PHISAT2_EXEC environment variable
+    2. PHIESTA_PHISAT2_EXEC environment variable
     3. bundled executable for current OS
     """
     if phisat2_exec_path is not None:
         path = Path(phisat2_exec_path)
-    elif os.environ.get("PYRAWPH_PHISAT2_EXEC"):
-        path = Path(os.environ["PYRAWPH_PHISAT2_EXEC"])
+    elif os.environ.get("PHIESTA_PHISAT2_EXEC"):
+        path = Path(os.environ["PHIESTA_PHISAT2_EXEC"])
     else:
         path = get_default_phisat2_executable()
 

@@ -633,18 +633,18 @@ def ensure_nearest_valid_cdse_mosaic_for_catalog(
 
             if cfg["verbose"]:
                 print(
-                    f"[PyRawPh] Reusing cached Sentinel mosaic: {out_tif} "
+                    f"[Phiesta] Reusing cached Sentinel mosaic: {out_tif} "
                     f"(rectified valid fraction = {vf:.3f})"
                 )
 
             if (not cfg["ensure_nonempty"]) or (vf >= cfg["min_valid_fraction"]):
                 if cfg["verbose"]:
-                    print(f"[PyRawPh] Selected Sentinel mosaic: {out_tif}")
+                    print(f"[Phiesta] Selected Sentinel mosaic: {out_tif}")
                 return out_tif
 
             if cfg["verbose"]:
                 print(
-                    f"[PyRawPh] Cached mosaic rejected: valid fraction {vf:.3f} "
+                    f"[Phiesta] Cached mosaic rejected: valid fraction {vf:.3f} "
                     f"< required {cfg['min_valid_fraction']:.3f}"
                 )
 
@@ -656,7 +656,7 @@ def ensure_nearest_valid_cdse_mosaic_for_catalog(
 
         if cfg["verbose"]:
             print(
-                f"[PyRawPh] Trying Sentinel search window ±{int(days)} day(s), "
+                f"[Phiesta] Trying Sentinel search window ±{int(days)} day(s), "
                 f"cloud<={int(cfg['max_cloud_coverage'])}%"
             )
 
@@ -708,13 +708,13 @@ def ensure_nearest_valid_cdse_mosaic_for_catalog(
 
         if cfg["verbose"]:
             print(
-                f"[PyRawPh] Mosaic rejected: valid fraction {vf:.3f} "
+                f"[Phiesta] Mosaic rejected: valid fraction {vf:.3f} "
                 f"< required {cfg['min_valid_fraction']:.3f}"
             )
 
         if (not cfg["ensure_nonempty"]) or (vf >= cfg["min_valid_fraction"]):
             if cfg["verbose"]:
-                print(f"[PyRawPh] Selected Sentinel mosaic: {out_tif}")
+                print(f"[Phiesta] Selected Sentinel mosaic: {out_tif}")
             return out_tif
 
     raise RuntimeError(

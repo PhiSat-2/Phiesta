@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyrawph"
+name = "phiesta"
 version = "0.0.1"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,7 +18,7 @@ dependencies = [
 
 
 [tool.setuptools.packages.find]
-include = ["pyrawph", "pyrawph.*", "third_party", "third_party.*"]
+include = ["phiesta", "phiesta.*", "third_party", "third_party.*"]
 
 [tool.setuptools.package-data]
 third_party = ["phisat2_exec/*.bin"]

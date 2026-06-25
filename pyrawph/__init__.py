@@ -5,7 +5,8 @@ Prefer:
 
     import phiesta
 
-This compatibility layer may be removed in a future release.
+The legacy pyrawph namespace is kept temporarily so older notebooks/scripts
+continue to work.
 """
 
 from __future__ import annotations

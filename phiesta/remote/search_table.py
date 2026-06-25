@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from pyrawph.remote.catalog_geometry import (
+from phiesta.remote.catalog_geometry import (
     catalog_geo_from_feature,
     get_catalog_center,
     get_catalog_identifier,

@@ -173,11 +173,11 @@ def _estimate_lightglue_homography(
     H_full = H_full / H_full[2, 2]
 
     if verbose:
-        print("[PyRawPh] LightGlue proxy alignment")
-        print(f"[PyRawPh] device={device}, features={features}")
-        print(f"[PyRawPh] keypoints sim={len(kpts_sim)}, real={len(kpts_real)}")
-        print(f"[PyRawPh] matches={n_matches}, inliers={n_inliers}, ratio={inlier_ratio:.3f}")
-        print(f"[PyRawPh] H_full:\n{H_full}")
+        print("[Phiesta] LightGlue proxy alignment")
+        print(f"[Phiesta] device={device}, features={features}")
+        print(f"[Phiesta] keypoints sim={len(kpts_sim)}, real={len(kpts_real)}")
+        print(f"[Phiesta] matches={n_matches}, inliers={n_inliers}, ratio={inlier_ratio:.3f}")
+        print(f"[Phiesta] H_full:\n{H_full}")
 
     return {
         "status": "SUCCESS",
@@ -242,7 +242,7 @@ def _warp_rectified_proxy_preview(
             dst.descriptions = descriptions
 
     if verbose:
-        print(f"[PyRawPh] Proxy aligned preview saved: {output_path}")
+        print(f"[Phiesta] Proxy aligned preview saved: {output_path}")
 
     return str(output_path)
 
@@ -279,7 +279,7 @@ def run_proxy_alignment(
     proxy_preview_dir = base_aligned_dir / "proxy_preview"
 
     if verbose:
-        print("[PyRawPh] Running proxy simulation")
+        print("[Phiesta] Running proxy simulation")
 
     proxy_sim = simulate_phisat2_from_sentinel_crop(
         crop=triplet.sentinel_crop,
@@ -293,7 +293,7 @@ def run_proxy_alignment(
     )
 
     if verbose:
-        print("[PyRawPh] Rectifying proxy simulation to catalog footprint")
+        print("[Phiesta] Rectifying proxy simulation to catalog footprint")
 
     rect = rectify_simulated_catalog_crop(
         event=event,

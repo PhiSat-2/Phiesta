@@ -1,7 +1,7 @@
-PyRawPh-Light documentation
+Phiesta documentation
 ===========================
 
-PyRawPh-Light is a research-oriented toolkit for ΦSat-2 product handling and
+Phiesta is a research-oriented toolkit for ΦSat-2 product handling and
 Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplet generation.
 
 .. toctree::

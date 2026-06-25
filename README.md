@@ -1,6 +1,6 @@
-# PyRawPh-Light
+# Phiesta
 
-PyRawPh-Light is a lightweight Python toolkit for working with ΦSat-2 L0/L1 products.
+Phiesta is a lightweight Python toolkit for working with ΦSat-2 L0/L1 products.
 
 It provides a user-friendly API to:
 
@@ -24,7 +24,7 @@ The package is designed for research workflows around ΦSat-2, Earth observation
 Open the quickstart notebook:
 
 ```text
-examples/PyRawPh_Quickstart.ipynb
+examples/Phiesta_Quickstart.ipynb
 
 It demonstrates the main API workflows step by step:
 
@@ -46,13 +46,13 @@ In the ESA / NEOHPC environment, Python is usually run inside the project contai
 
 Typical usage:
 
-cd /shared/home/mdepastor/projects/PyRawPh-Light
-python -m compileall pyrawph
+cd /shared/home/mdepastor/projects/Phiesta
+python -m compileall phiesta
 
 If running manually inside the ESA container, use the configured project Python environment.
 
 Quick start: connect to Insula and load one L1 product
-from pyrawph import connect_insula
+from phiesta import connect_insula
 
 client = connect_insula()
 event = client.load_l1("5359")
@@ -142,13 +142,13 @@ event = client.load_l1(
 Remote L0
 l0_event = client.load_l0("5359")
 Local L1 product
-from pyrawph import L1_event
+from phiesta import L1_event
 
 event = L1_event.from_path(
     "data/l1/PHISAT-2_L1_000005359_20260512183354_20260512183357_236B0FFC"
 )
 Local L0 product
-from pyrawph import L0_event
+from phiesta import L0_event
 
 l0_event = L0_event.from_path(
     "data/l0/PHISAT-2_L0_PRODUCT_FOLDER"
@@ -233,7 +233,7 @@ Display registration between bands
 
 Some ΦSat-2 bands may be slightly shifted relative to each other.
 
-For visualization, PyRawPh can register bands to a master band before building a composite:
+For visualization, Phiesta can register bands to a master band before building a composite:
 
 event.show_rgb(
     bands=("NIR", "RED", "GREEN"),
@@ -376,7 +376,7 @@ This is different from display registration between bands.
 
 L0/L1 registration attempts to align a L0 product to the space of the corresponding L1 product.
 
-from pyrawph.utils.l0_l1_registration import register_l0_to_l1_space
+from phiesta.utils.l0_l1_registration import register_l0_to_l1_space
 
 l0_event = client.load_l0("5359")
 l1_event = client.load_l1("5359")
@@ -409,7 +409,7 @@ real ΦSat-2 L1;
 Sentinel-2B warped to the real ΦSat-2 grid;
 simulated ΦSat-2 warped to the real ΦSat-2 grid.
 Batch triplet generation
-from pyrawph.triplets.batch import build_full_sentinel_triplets_batch
+from phiesta.triplets.batch import build_full_sentinel_triplets_batch
 
 batch = build_full_sentinel_triplets_batch(
     client=client,
@@ -457,7 +457,7 @@ triplet = event.build_full_sentinel_triplet()
 event.inspect_full_sentinel_triplet(triplet)
 event.show_full_sentinel_triplet(triplet)
 Repository structure
-pyrawph/
+phiesta/
 ├── l0/           # L0 product loading and conversion
 ├── l1/           # L1 product loading, visualization, band access
 ├── remote/       # Insula auth, search, download, search tables, GeoJSON export

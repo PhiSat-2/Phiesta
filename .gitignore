@@ -2,7 +2,7 @@
 data/
 prepared_l0/
 docs/_build/
-pyrawph.egg-info/
+phiesta.egg-info/
 __pycache__/
 .ipynb_checkpoints/
 *.pyc

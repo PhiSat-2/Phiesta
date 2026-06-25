@@ -1,7 +1,7 @@
-pyrawph
+phiesta
 =======
 
 .. toctree::
    :maxdepth: 4
 
-   pyrawph
+   phiesta

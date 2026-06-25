@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-OUT = Path("examples/PyRawPh_Quickstart.ipynb")
+OUT = Path("examples/Phiesta_Quickstart.ipynb")
 
 
 def md(text: str) -> dict:
@@ -27,9 +27,9 @@ def code(text: str) -> dict:
 cells = []
 
 cells.append(md(r"""
-# PyRawPh-Light Quickstart
+# Phiesta Quickstart
 
-This notebook is the main user-facing entry point for PyRawPh-Light.
+This notebook is the main user-facing entry point for Phiesta.
 
 It shows the practical API workflows:
 
@@ -85,7 +85,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from pyrawph import connect_insula, L1_event, L0_event
+from phiesta import connect_insula, L1_event, L0_event
 
 client = connect_insula()
 """))
@@ -122,7 +122,7 @@ The exact feature structure can vary slightly depending on the Insula client, so
 """))
 
 cells.append(code(r"""
-from pyrawph.remote.catalog_geometry import (
+from phiesta.remote.catalog_geometry import (
     catalog_geo_from_feature,
     get_catalog_center,
     get_catalog_bbox_lonlat,
@@ -179,7 +179,7 @@ else:
 cells.append(md(r"""
 ## 3. Main ways to open or download products
 
-PyRawPh supports several entry points.
+Phiesta supports several entry points.
 
 ### Remote L1 by acquisition id
 
@@ -372,7 +372,7 @@ cells.append(md(r"""
 
 Some ΦSat-2 bands can be slightly shifted relative to each other.
 
-For display, PyRawPh can register bands to a master band before building the composite.
+For display, Phiesta can register bands to a master band before building the composite.
 This is especially useful for RGB and false-color images.
 
 This is a display operation: it helps visualization, but it does not rewrite the original product on disk.
@@ -461,7 +461,7 @@ event.compare_display_stretches(
 cells.append(md(r"""
 ## 15. Band statistics and distributions
 
-PyRawPh can compute sampled statistics and plot value distributions.
+Phiesta can compute sampled statistics and plot value distributions.
 
 This is useful because raw ΦSat-2 bands are not necessarily on comparable physical scales.
 """))
@@ -629,7 +629,7 @@ The exact parameters depend on the acquisition and on the selected master band.
 
 cells.append(code(r"""
 if RUN_L0_L1_REGISTRATION:
-    from pyrawph.utils.l0_l1_registration import register_l0_to_l1_space
+    from phiesta.utils.l0_l1_registration import register_l0_to_l1_space
 
     l0_event = client.load_l0(PRODUCT_ID)
     l1_event = event
@@ -714,7 +714,7 @@ Use this when several acquisitions must be processed.
 
 cells.append(code(r"""
 if RUN_BATCH:
-    from pyrawph.triplets.batch import build_full_sentinel_triplets_batch
+    from phiesta.triplets.batch import build_full_sentinel_triplets_batch
 
     batch = build_full_sentinel_triplets_batch(
         client=client,
@@ -815,7 +815,7 @@ event.compare_display_stretches(("NIR", "RED", "GREEN"))
 ### L0/L1 comparison
 
 ```python
-from pyrawph.utils.l0_l1_registration import register_l0_to_l1_space
+from phiesta.utils.l0_l1_registration import register_l0_to_l1_space
 l0_registered = register_l0_to_l1_space(l0_event, l1_event)
 ```
 
@@ -830,7 +830,7 @@ event.show_full_sentinel_triplet(triplet)
 ### Batch processing
 
 ```python
-from pyrawph.triplets.batch import build_full_sentinel_triplets_batch
+from phiesta.triplets.batch import build_full_sentinel_triplets_batch
 batch = build_full_sentinel_triplets_batch(client, ["5359", "5095"])
 ```
 """))

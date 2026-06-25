@@ -51,9 +51,9 @@ def _load_world_gdf():
     except Exception:
         pass
 
-    # Optional PyRawPh asset fallback if present.
+    # Optional Phiesta asset fallback if present.
     repo_root = Path(__file__).resolve().parents[2]
-    asset_path = repo_root / "pyrawph" / "assets" / "world_countries.geojson"
+    asset_path = repo_root / "phiesta" / "assets" / "world_countries.geojson"
 
     if asset_path.exists():
         try:

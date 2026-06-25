@@ -1,7 +1,7 @@
 Overview
 ========
 
-PyRawPh-Light is a research-oriented Python package for working with ΦSat-2
+Phiesta is a research-oriented Python package for working with ΦSat-2
 L0/L1 products and building Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets.
 
 Main features
@@ -19,20 +19,20 @@ Main features
 Typical public entry points
 ---------------------------
 
-- ``pyrawph.connect_insula``
-- ``pyrawph.L1_event``
-- ``pyrawph.L0_event``
+- ``phiesta.connect_insula``
+- ``phiesta.L1_event``
+- ``phiesta.L0_event``
 - ``event.build_full_sentinel_triplet()``
 - ``event.inspect_full_sentinel_triplet()``
 - ``event.show_full_sentinel_triplet()``
-- ``pyrawph.triplets.batch.build_full_sentinel_triplets_batch``
+- ``phiesta.triplets.batch.build_full_sentinel_triplets_batch``
 
 Minimal triplet example
 -----------------------
 
 .. code-block:: python
 
-   from pyrawph import connect_insula
+   from phiesta import connect_insula
 
    client = connect_insula()
    event = client.load_l1("5359")

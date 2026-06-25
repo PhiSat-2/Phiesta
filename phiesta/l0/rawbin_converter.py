@@ -14,7 +14,7 @@ def _default_sim_root() -> Path:
     Resolve the bundled SimToTiff root directory.
 
     Resolution order:
-      1) PYRAWPH_SIM_ROOT environment variable
+      1) PHIESTA_SIM_ROOT environment variable
       2) bundled location under third_party/simtotiff/
 
     Returns:
@@ -23,13 +23,13 @@ def _default_sim_root() -> Path:
     Raises:
         FileNotFoundError: If no valid converter root can be found.
     """
-    env_root = os.environ.get("PYRAWPH_SIM_ROOT")
+    env_root = os.environ.get("PHIESTA_SIM_ROOT")
     if env_root:
         p = Path(env_root)
         if (p / "simera" / "packet_to_tiff.py").exists():
             return p
         raise FileNotFoundError(
-            f"PYRAWPH_SIM_ROOT is set but does not contain simera/packet_to_tiff.py: {p}"
+            f"PHIESTA_SIM_ROOT is set but does not contain simera/packet_to_tiff.py: {p}"
         )
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -46,7 +46,7 @@ def _default_sim_root() -> Path:
 
     raise FileNotFoundError(
         "Could not resolve a bundled SimToTiff root. "
-        "Set PYRAWPH_SIM_ROOT or place the converter under "
+        "Set PHIESTA_SIM_ROOT or place the converter under "
         "third_party/simtotiff/SA072-SENSE-Conversion-Code-main/"
         "SA072-SENSE-Conversion-Code-main/."
     )
@@ -71,7 +71,7 @@ def convert_l0_rawbin_inplace(
     overwrite_raw: bool = True,
 ) -> Path:
     """
-    Convert an Insula-downloaded L0 product containing raw.bin into a PyRawPh-readable
+    Convert an Insula-downloaded L0 product containing raw.bin into a Phiesta-readable
     folder by generating raw TIFF bands in product_folder/raw.
 
     The converter is executed in an isolated temporary workspace to avoid collisions
@@ -104,7 +104,7 @@ def convert_l0_rawbin_inplace(
         raise FileNotFoundError(
             f"sim_root not found: {sim_root}\n"
             f"Either bundle the converter in third_party/simtotiff/..., "
-            f"or pass sim_root=..., or define PYRAWPH_SIM_ROOT."
+            f"or pass sim_root=..., or define PHIESTA_SIM_ROOT."
         )
 
     if not (sim_root / simera_subdir).is_dir():
@@ -120,7 +120,7 @@ def convert_l0_rawbin_inplace(
         else:
             return product_folder
 
-    with tempfile.TemporaryDirectory(prefix="pyrawph_l0conv_") as tmp_dir:
+    with tempfile.TemporaryDirectory(prefix="phiesta_l0conv_") as tmp_dir:
         tmp_root = Path(tmp_dir)
         work_root = tmp_root / "converter"
 

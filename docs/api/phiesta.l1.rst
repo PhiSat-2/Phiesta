@@ -1,13 +1,13 @@
-pyrawph.l1 package
+phiesta.l1 package
 ==================
 
 Submodules
 ----------
 
-pyrawph.l1.l1\_event module
+phiesta.l1.l1\_event module
 ---------------------------
 
-.. automodule:: pyrawph.l1.l1_event
+.. automodule:: phiesta.l1.l1_event
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ pyrawph.l1.l1\_event module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.l1
+.. automodule:: phiesta.l1
    :members:
    :undoc-members:
    :show-inheritance:

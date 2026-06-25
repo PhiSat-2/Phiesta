@@ -12,7 +12,7 @@ def _load_insula_openid_connect():
         raise ModuleNotFoundError(
             "InsulaWorkflowClient is required to use connect_insula(). "
             "Install it in the current Python environment, or make sure it is bundled "
-            "with PyRawPh."
+            "with Phiesta."
         ) from exc
 
     return InsulaOpenIDConnect

@@ -1,37 +1,37 @@
-pyrawph.utils package
+phiesta.utils package
 =====================
 
 Submodules
 ----------
 
-pyrawph.utils.export\_utils module
+phiesta.utils.export\_utils module
 ----------------------------------
 
-.. automodule:: pyrawph.utils.export_utils
+.. automodule:: phiesta.utils.export_utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.utils.l0\_l1\_registration module
+phiesta.utils.l0\_l1\_registration module
 -----------------------------------------
 
-.. automodule:: pyrawph.utils.l0_l1_registration
+.. automodule:: phiesta.utils.l0_l1_registration
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.utils.l1\_utils module
+phiesta.utils.l1\_utils module
 ------------------------------
 
-.. automodule:: pyrawph.utils.l1_utils
+.. automodule:: phiesta.utils.l1_utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.utils.processing\_utils module
+phiesta.utils.processing\_utils module
 --------------------------------------
 
-.. automodule:: pyrawph.utils.processing_utils
+.. automodule:: phiesta.utils.processing_utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -39,7 +39,7 @@ pyrawph.utils.processing\_utils module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.utils
+.. automodule:: phiesta.utils
    :members:
    :undoc-members:
    :show-inheritance:

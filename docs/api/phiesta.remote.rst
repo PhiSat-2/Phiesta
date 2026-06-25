@@ -1,45 +1,45 @@
-pyrawph.remote package
+phiesta.remote package
 ======================
 
 Submodules
 ----------
 
-pyrawph.remote.auth module
+phiesta.remote.auth module
 --------------------------
 
-.. automodule:: pyrawph.remote.auth
+.. automodule:: phiesta.remote.auth
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.remote.catalog_geometry module
+phiesta.remote.catalog_geometry module
 --------------------------------------
 
-.. automodule:: pyrawph.remote.catalog_geometry
+.. automodule:: phiesta.remote.catalog_geometry
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.remote.constants module
+phiesta.remote.constants module
 -------------------------------
 
-.. automodule:: pyrawph.remote.constants
+.. automodule:: phiesta.remote.constants
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.remote.insula_client module
+phiesta.remote.insula_client module
 -----------------------------------
 
-.. automodule:: pyrawph.remote.insula_client
+.. automodule:: phiesta.remote.insula_client
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.remote.local_resolver module
+phiesta.remote.local_resolver module
 ------------------------------------
 
-.. automodule:: pyrawph.remote.local_resolver
+.. automodule:: phiesta.remote.local_resolver
    :members:
    :undoc-members:
    :show-inheritance:
@@ -47,7 +47,7 @@ pyrawph.remote.local_resolver module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.remote
+.. automodule:: phiesta.remote
    :members:
    :undoc-members:
    :show-inheritance:

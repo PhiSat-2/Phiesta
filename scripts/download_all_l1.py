@@ -5,7 +5,7 @@ from getpass import getpass
 
 from InsulaWorkflowClient import InsulaOpenIDConnect
 
-from pyrawph.remote import (
+from phiesta.remote import (
     InsulaClient,
     PHISAT2_BASE_URL,
     PHISAT2_L0_COLLECTION,

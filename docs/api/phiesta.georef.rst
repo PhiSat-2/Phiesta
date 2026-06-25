@@ -1,53 +1,53 @@
-pyrawph.georef package
+phiesta.georef package
 ======================
 
 Submodules
 ----------
 
-pyrawph.georef.build_s2_mosaic_cdse module
+phiesta.georef.build_s2_mosaic_cdse module
 ------------------------------------------
 
-.. automodule:: pyrawph.georef.build_s2_mosaic_cdse
+.. automodule:: phiesta.georef.build_s2_mosaic_cdse
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.georef.catalog_overlay module
+phiesta.georef.catalog_overlay module
 -------------------------------------
 
-.. automodule:: pyrawph.georef.catalog_overlay
+.. automodule:: phiesta.georef.catalog_overlay
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.georef.features module
+phiesta.georef.features module
 ------------------------------
 
-.. automodule:: pyrawph.georef.features
+.. automodule:: phiesta.georef.features
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.georef.geo module
+phiesta.georef.geo module
 -------------------------
 
-.. automodule:: pyrawph.georef.geo
+.. automodule:: phiesta.georef.geo
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.georef.models module
+phiesta.georef.models module
 ----------------------------
 
-.. automodule:: pyrawph.georef.models
+.. automodule:: phiesta.georef.models
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.georef.sentinel_provider module
+phiesta.georef.sentinel_provider module
 ---------------------------------------
 
-.. automodule:: pyrawph.georef.sentinel_provider
+.. automodule:: phiesta.georef.sentinel_provider
    :members:
    :undoc-members:
    :show-inheritance:
@@ -55,7 +55,7 @@ pyrawph.georef.sentinel_provider module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.georef
+.. automodule:: phiesta.georef
    :members:
    :undoc-members:
    :show-inheritance:

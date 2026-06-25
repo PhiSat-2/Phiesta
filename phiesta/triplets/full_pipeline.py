@@ -104,12 +104,12 @@ def build_full_sentinel_triplet(
     product_dir = output_root / pid
 
     if verbose:
-        print("[PyRawPh] Building full Sentinel/PhiSat-2 triplet")
-        print(f"[PyRawPh] product_id={pid}")
-        print(f"[PyRawPh] output_dir={product_dir}")
-        print(f"[PyRawPh] buffer_km={buffer_km}")
-        print(f"[PyRawPh] proxy_target_size={proxy_target_size}")
-        print(f"[PyRawPh] final_simulation_target_size={final_simulation_target_size}")
+        print("[Phiesta] Building full Sentinel/PhiSat-2 triplet")
+        print(f"[Phiesta] product_id={pid}")
+        print(f"[Phiesta] output_dir={product_dir}")
+        print(f"[Phiesta] buffer_km={buffer_km}")
+        print(f"[Phiesta] proxy_target_size={proxy_target_size}")
+        print(f"[Phiesta] final_simulation_target_size={final_simulation_target_size}")
 
     # 1. Big Sentinel crop
     triplet = event.build_sentinel_triplet(
@@ -252,10 +252,10 @@ def build_full_sentinel_triplet(
     result["paths"]["report"] = str(report_path)
 
     if verbose:
-        print("[PyRawPh] Full triplet build complete")
-        print(f"[PyRawPh] elapsed_s={elapsed_s:.1f}")
-        print(f"[PyRawPh] valid_fraction_sentinel={vf_sentinel:.3f}")
-        print(f"[PyRawPh] valid_fraction_simulated={vf_simulated:.3f}")
-        print(f"[PyRawPh] report={report_path}")
+        print("[Phiesta] Full triplet build complete")
+        print(f"[Phiesta] elapsed_s={elapsed_s:.1f}")
+        print(f"[Phiesta] valid_fraction_sentinel={vf_sentinel:.3f}")
+        print(f"[Phiesta] valid_fraction_simulated={vf_simulated:.3f}")
+        print(f"[Phiesta] report={report_path}")
 
     return result

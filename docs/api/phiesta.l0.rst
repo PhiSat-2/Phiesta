@@ -1,21 +1,21 @@
-pyrawph.l0 package
+phiesta.l0 package
 ==================
 
 Submodules
 ----------
 
-pyrawph.l0.l0\_event module
+phiesta.l0.l0\_event module
 ---------------------------
 
-.. automodule:: pyrawph.l0.l0_event
+.. automodule:: phiesta.l0.l0_event
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyrawph.l0.reader module
+phiesta.l0.reader module
 ------------------------
 
-.. automodule:: pyrawph.l0.reader
+.. automodule:: phiesta.l0.reader
    :members:
    :undoc-members:
    :show-inheritance:
@@ -23,7 +23,7 @@ pyrawph.l0.reader module
 Module contents
 ---------------
 
-.. automodule:: pyrawph.l0
+.. automodule:: phiesta.l0
    :members:
    :undoc-members:
    :show-inheritance:

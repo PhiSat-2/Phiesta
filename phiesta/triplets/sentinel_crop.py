@@ -307,7 +307,7 @@ def create_sentinel_crop(
         )
 
     if verbose:
-        print(f"[PyRawPh] Creating Sentinel-2B crop: {crop_path}")
+        print(f"[Phiesta] Creating Sentinel-2B crop: {crop_path}")
 
     min_lon, min_lat, max_lon, max_lat = _buffer_lonlat_bounds_from_event(
         event,
@@ -336,7 +336,7 @@ def create_sentinel_crop(
     with rasterio.Env(GDAL_NUM_THREADS="1", GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"):
         for band in S2_BANDS_SIM:
             if verbose:
-                print(f"[PyRawPh] Cropping S2 band {band}")
+                print(f"[Phiesta] Cropping S2 band {band}")
 
             arr, master_crs, master_transform, master_shape = _merge_band_paths_to_master_grid(
                 band_paths=band_map[band],
@@ -393,8 +393,8 @@ def create_sentinel_crop(
         json.dump(metadata, f, indent=2)
 
     if verbose:
-        print(f"[PyRawPh] Sentinel crop saved: {crop_path}")
-        print(f"[PyRawPh] Metadata saved: {metadata_path}")
+        print(f"[Phiesta] Sentinel crop saved: {crop_path}")
+        print(f"[Phiesta] Metadata saved: {metadata_path}")
 
     return SentinelCropResult(
         crop_path=str(crop_path),

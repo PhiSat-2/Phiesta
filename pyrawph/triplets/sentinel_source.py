@@ -94,16 +94,22 @@ def _fetch_l1c_twin(
 
     res = session.get(
         CDSE_PRODUCTS_URL,
-        params={"$filter": query, "$select": "Name,S3Path"},
+        params={"$filter": query, "$select": "Id,Name,S3Path"},
         timeout=60,
     ).json().get("value", [])
 
     if not res:
         return None
 
+    item = res[0]
+
     return {
-        "l1c": res[0].get("S3Path", "").rstrip("/"),
+        "l1c": item.get("S3Path", "").rstrip("/"),
+        "l1c_id": item.get("Id"),
+        "l1c_name": item.get("Name"),
         "l2a": l2a_product.get("S3Path", "").rstrip("/"),
+        "l2a_id": l2a_product.get("Id"),
+        "l2a_name": l2a_product.get("Name"),
         "tile_id": tile_id,
         "time": exact_time,
     }

@@ -61,6 +61,12 @@ def build_full_sentinel_triplet(
     features: str = "superpoint",
     max_keypoints: int = 8000,
     final_margin_pct: float = 0.15,
+    sentinel_backend: str = "auto",
+    sentinel_cache_dir: str | Path = "cache/sentinel2",
+    cdse_username: str | None = None,
+    cdse_password: str | None = None,
+    cdse_access_token: str | None = None,
+    overwrite_sentinel_download: bool = False,
     final_simulation_target_size: tuple[int, int] | None = None,
     allow_large_native: bool = True,
     overwrite_big_crop: bool = False,
@@ -117,7 +123,13 @@ def build_full_sentinel_triplet(
         run_sentinel_crop=True,
         run_simulation=False,
         overwrite_crop=overwrite_big_crop,
-    )
+            sentinel_backend=sentinel_backend,
+        sentinel_cache_dir=sentinel_cache_dir,
+        cdse_username=cdse_username,
+        cdse_password=cdse_password,
+        cdse_access_token=cdse_access_token,
+        overwrite_sentinel_download=overwrite_sentinel_download,
+)
 
     # 2. Proxy simulation + rectification + LightGlue
     proxy = run_proxy_alignment(

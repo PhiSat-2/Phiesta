@@ -21,6 +21,7 @@ from shapely.ops import transform as shapely_transform
 
 from ..remote.catalog_geometry import get_catalog_corners
 from .models import SentinelSource, SentinelCropResult
+from .sentinel_download import resolve_sentinel_l1c_safe_paths
 
 
 S2_BANDS_SIM = ["B02", "B03", "B04", "B08", "B05", "B06", "B07"]
@@ -270,6 +271,12 @@ def create_sentinel_crop(
     buffer_km: float = 10.0,
     overwrite: bool = False,
     verbose: bool = True,
+    sentinel_backend: str = "auto",
+    sentinel_cache_dir: str | Path = "cache/sentinel2",
+    cdse_username: str | None = None,
+    cdse_password: str | None = None,
+    cdse_access_token: str | None = None,
+    overwrite_sentinel_download: bool = False,
 ) -> SentinelCropResult:
     """
     Create a local Sentinel-2B crop and simulation metadata for one PhiSat-2 event.
@@ -308,7 +315,18 @@ def create_sentinel_crop(
     )
     bbox_4326 = box(min_lon, min_lat, max_lon, max_lat)
 
-    band_map = _find_l1c_band_paths(source.l1c_paths)
+    local_l1c_paths = resolve_sentinel_l1c_safe_paths(
+        source,
+        backend=sentinel_backend,
+        cache_dir=sentinel_cache_dir,
+        cdse_username=cdse_username,
+        cdse_password=cdse_password,
+        cdse_access_token=cdse_access_token,
+        overwrite=overwrite_sentinel_download,
+        verbose=verbose,
+    )
+
+    band_map = _find_l1c_band_paths(local_l1c_paths)
 
     final_channels = []
     master_crs = None
@@ -348,7 +366,7 @@ def create_sentinel_crop(
         dst.descriptions = tuple(S2_BANDS_NAMES)
 
     metadata = _extract_simulator_metadata(
-        l1c_path=source.l1c_paths[0],
+        l1c_path=local_l1c_paths[0],
         target_datetime=source.s2_datetime,
     )
     metadata.update(
@@ -364,7 +382,10 @@ def create_sentinel_crop(
             "band_names": list(S2_BANDS_NAMES),
             "crop_path": str(crop_path),
             "l1c_paths": list(source.l1c_paths),
+            "l1c_local_paths": list(local_l1c_paths),
             "l2a_paths": list(source.l2a_paths),
+            "sentinel_backend": str(sentinel_backend),
+            "sentinel_cache_dir": str(sentinel_cache_dir),
         }
     )
 

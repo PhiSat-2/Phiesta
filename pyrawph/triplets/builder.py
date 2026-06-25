@@ -89,6 +89,12 @@ def build_sentinel_triplet(
     min_coverage: float = 0.85,
     run_sentinel_crop: bool = True,
     overwrite_crop: bool = False,
+    sentinel_backend: str = "auto",
+    sentinel_cache_dir: str | Path = "cache/sentinel2",
+    cdse_username: str | None = None,
+    cdse_password: str | None = None,
+    cdse_access_token: str | None = None,
+    overwrite_sentinel_download: bool = False,
     run_simulation: bool = True,
     overwrite_simulation: bool = False,
     simulation_workers: int = 1,
@@ -197,6 +203,12 @@ def build_sentinel_triplet(
             buffer_km=buffer_km,
             overwrite=overwrite_crop,
             verbose=verbose,
+            sentinel_backend=sentinel_backend,
+            sentinel_cache_dir=sentinel_cache_dir,
+            cdse_username=cdse_username,
+            cdse_password=cdse_password,
+            cdse_access_token=cdse_access_token,
+            overwrite_sentinel_download=overwrite_sentinel_download,
         )
 
         triplet.sentinel_crop = crop

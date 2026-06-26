@@ -893,3 +893,183 @@ def inspect_strict_georef(
         print(f"simulated strict      : {summary['simulated_strict']}")
 
     return summary
+
+
+def _resolve_final_sentinel_crop_for_georef(triplet, metadata_path=None, metadata=None) -> Path:
+    """
+    Resolve the final Sentinel crop used before warping to the real grid.
+    """
+    metadata = metadata or {}
+    paths = triplet.get("paths", triplet) if isinstance(triplet, dict) else {}
+
+    candidates = [
+        paths.get("final_sentinel_crop"),
+        triplet.get("final_sentinel_crop") if isinstance(triplet, dict) else None,
+        metadata.get("final_sentinel_crop"),
+        metadata.get("final_sentinel_crop_path"),
+        metadata.get("paths", {}).get("final_sentinel_crop") if isinstance(metadata.get("paths"), dict) else None,
+    ]
+
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        p = Path(str(candidate))
+        if p.exists():
+            return p
+
+    if metadata_path is not None:
+        root = Path(metadata_path).parent.parent
+        matches = sorted((root / "sentinel_final").glob("*_s2b_final_crop_7bands.tif"))
+        if matches:
+            return matches[0]
+
+    raise FileNotFoundError(
+        "Could not resolve final Sentinel crop. Pass the triplet dict returned by "
+        "build_full_sentinel_triplet(), not only the strict report."
+    )
+
+
+def georef_from_strict_result(
+    triplet,
+    strict_result,
+    *,
+    print_report: bool = False,
+) -> dict:
+    """
+    Convert a strict georef result into a directly usable georeference object.
+
+    Returns corners/polygon in lon-lat, homographies, quality metrics and output paths.
+    """
+    from pyproj import Transformer
+
+    paths = _resolve_triplet_paths(triplet)
+    metadata = paths["metadata"]
+    metadata_path = paths["metadata_path"]
+
+    report = strict_result.get("report", strict_result)
+
+    H_s2_to_real = report.get("H_s2_to_real_strict")
+    if H_s2_to_real is None:
+        raise ValueError("Strict result does not contain H_s2_to_real_strict.")
+
+    H_s2_to_real = _as_h3x3(H_s2_to_real)
+    H_real_to_s2 = np.linalg.inv(H_s2_to_real)
+    H_real_to_s2 = H_real_to_s2 / H_real_to_s2[2, 2]
+
+    final_sentinel_crop = _resolve_final_sentinel_crop_for_georef(
+        triplet,
+        metadata_path=metadata_path,
+        metadata=metadata,
+    )
+
+    real_path = Path(report.get("paths", {}).get("real") or paths["real_path"])
+
+    with rasterio.open(real_path) as real_src:
+        real_w = real_src.width
+        real_h = real_src.height
+
+    real_corners = np.array(
+        [
+            [0.0, 0.0],
+            [real_w - 1.0, 0.0],
+            [real_w - 1.0, real_h - 1.0],
+            [0.0, real_h - 1.0],
+        ],
+        dtype=np.float64,
+    )
+
+    center_px = np.array(
+        [[(real_w - 1.0) / 2.0, (real_h - 1.0) / 2.0]],
+        dtype=np.float64,
+    )
+
+    def project_real_to_s2(points_xy):
+        pts = np.concatenate(
+            [points_xy, np.ones((len(points_xy), 1), dtype=np.float64)],
+            axis=1,
+        )
+        out = (H_real_to_s2 @ pts.T).T
+        out = out[:, :2] / out[:, 2:3]
+        return out
+
+    s2_corners = project_real_to_s2(real_corners)
+    s2_center = project_real_to_s2(center_px)
+
+    with rasterio.open(final_sentinel_crop) as s2_src:
+        transform = s2_src.transform
+        crs = s2_src.crs
+
+        map_x, map_y = transform * (s2_corners[:, 0], s2_corners[:, 1])
+        center_x, center_y = transform * (s2_center[:, 0], s2_center[:, 1])
+
+        transformer = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
+        lon, lat = transformer.transform(map_x, map_y)
+        center_lon, center_lat = transformer.transform(center_x, center_y)
+
+    corners_lonlat = [[float(x), float(y)] for x, y in zip(lon, lat)]
+    polygon_lonlat = corners_lonlat + [corners_lonlat[0]]
+
+    inspection = inspect_strict_georef(strict_result, print_report=print_report)
+
+    product_id = (
+        metadata.get("product_id")
+        or report.get("product_id")
+        or Path(real_path).parts[-3] if len(Path(real_path).parts) >= 3 else None
+    )
+
+    georef = {
+        "status": "SUCCESS",
+        "method": "sentinel_strict",
+        "product_id": str(product_id) if product_id is not None else None,
+        "quality": inspection["quality"],
+        "corners_lonlat": corners_lonlat,
+        "corners_latlon": [[lat, lon] for lon, lat in corners_lonlat],
+        "center_lonlat": [float(center_lon[0]), float(center_lat[0])],
+        "center_latlon": [float(center_lat[0]), float(center_lon[0])],
+        "polygon_geojson": {
+            "type": "Polygon",
+            "coordinates": [polygon_lonlat],
+        },
+        "real_shape": {
+            "width": int(real_w),
+            "height": int(real_h),
+        },
+        "H_s2_to_real": H_s2_to_real.tolist(),
+        "H_real_to_s2": H_real_to_s2.tolist(),
+        "metrics": report.get("metrics", {}),
+        "strict_report": report,
+        "paths": {
+            "real": str(real_path),
+            "final_sentinel_crop": str(final_sentinel_crop),
+            "preview": report.get("paths", {}).get("preview"),
+            "sentinel_strict": report.get("paths", {}).get("sentinel_strict"),
+            "simulated_strict": report.get("paths", {}).get("simulated_strict"),
+            "matches": report.get("paths", {}).get("matches"),
+            "inliers": report.get("paths", {}).get("inliers"),
+        },
+    }
+
+    return georef
+
+
+def get_strict_georef_from_triplet(
+    triplet,
+    *,
+    source: str = "simulated",
+    print_report: bool = False,
+    **strict_kwargs,
+) -> dict:
+    """
+    Run strict georeference refinement and return a directly usable georef object.
+    """
+    strict = refine_triplet_georeference_strict(
+        triplet,
+        source=source,
+        **strict_kwargs,
+    )
+
+    return georef_from_strict_result(
+        triplet,
+        strict,
+        print_report=print_report,
+    )

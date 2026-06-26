@@ -1,5 +1,45 @@
 # Phiesta
 
+## Start here
+
+- **Quickstart notebook:** [`examples/Phiesta_Quickstart.ipynb`](examples/Phiesta_Quickstart.ipynb)
+- **Documentation overview:** [`docs/overview.rst`](docs/overview.rst)
+- **API reference sources:** [`docs/api/`](docs/api/)
+
+### Minimal georeferencing example
+
+```python
+from phiesta import L1_event
+
+event = L1_event.from_path("/path/to/PHISAT-2_L1_...")
+
+georef = event.get_georef(
+    sentinel_backend="download",
+    source="simulated",
+)
+
+print(georef["quality"])
+print(georef["corners_lonlat"])
+print(georef["polygon_geojson"])
+print(georef["metrics"])
+```
+
+You can also load a product from Insula:
+
+```python
+from phiesta import connect_insula
+
+client = connect_insula()
+event = client.load_l1("5359")
+
+georef = event.get_georef(
+    sentinel_backend="download",
+    source="simulated",
+)
+```
+
+
+
 Phiesta is a lightweight Python toolkit for working with ΦSat-2 L0/L1 products.
 
 It provides a user-friendly API to:

@@ -163,6 +163,60 @@ class L1_event:
         return _build_sentinel_triplet(self, **kwargs)
     
 
+
+    def get_georef(
+        self,
+        method="sentinel_strict",
+        triplet=None,
+        source="simulated",
+        sentinel_backend="download",
+        sentinel_cache_dir="cache/sentinel2",
+        buffer_km=20.0,
+        proxy_target_size=(1024, 1024),
+        final_margin_pct=0.15,
+        final_simulation_target_size=None,
+        triplet_kwargs=None,
+        strict_kwargs=None,
+        verbose=True,
+    ):
+        """
+        Return a directly usable georeference object for this L1 acquisition.
+
+        Default method:
+            method="sentinel_strict"
+
+        This builds a Sentinel-2 based triplet when no triplet is provided,
+        then refines the alignment and returns corners, polygon GeoJSON,
+        homographies, paths and quality metrics.
+        """
+        if method != "sentinel_strict":
+            raise ValueError("Only method='sentinel_strict' is currently supported.")
+
+        triplet_kwargs = dict(triplet_kwargs or {})
+        strict_kwargs = dict(strict_kwargs or {})
+
+        if triplet is None:
+            triplet = self.build_full_sentinel_triplet(
+                sentinel_backend=sentinel_backend,
+                sentinel_cache_dir=sentinel_cache_dir,
+                buffer_km=buffer_km,
+                proxy_target_size=proxy_target_size,
+                final_margin_pct=final_margin_pct,
+                final_simulation_target_size=final_simulation_target_size,
+                verbose=verbose,
+                **triplet_kwargs,
+            )
+
+        from phiesta.triplets.strict_georef import get_strict_georef_from_triplet
+
+        return get_strict_georef_from_triplet(
+            triplet,
+            source=source,
+            verbose=verbose,
+            **strict_kwargs,
+        )
+
+
     def refine_triplet_georeference_strict(
         self,
         triplet,

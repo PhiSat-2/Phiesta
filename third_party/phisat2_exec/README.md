@@ -1,12 +1,20 @@
-# PhiSat-2 simulator executable
+# Optional local executables
 
-This directory is intentionally not versioned.
+This directory is intentionally kept without executable binaries.
 
-Phiesta can use the PhiSat-2 simulator executable when available locally, but the binary itself is not distributed with this repository.
+The public Python simulator code used by Phiesta is included in:
 
-Expected local path, when available:
+    third_party/orbitalai_phisat2_sim/
 
+This folder is only a placeholder for optional local executable binaries or platform-specific helpers that are not distributed with this repository.
 
-third_party/phisat2_exec/phisat2_unix.bin
+If you have authorized access to such binaries, place them locally here or pass their path explicitly through the API.
 
-Users who have authorized access to the simulator should place the executable here or pass its path explicitly through the API.
+Examples of local-only files:
+
+    third_party/phisat2_exec/phisat2_unix.bin
+    third_party/phisat2_exec/phisat2_win.bin
+    third_party/phisat2_exec/phisat2_osx-arm64.bin
+    third_party/phisat2_exec/phisat2_osx-x86_64.bin
+
+These files are ignored by Git and should not be committed.

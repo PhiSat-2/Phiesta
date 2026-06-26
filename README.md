@@ -663,3 +663,14 @@ patch_table = event.patchify(
 
 This export is intended for simple research and ML workflows. It does not claim georeferenced GeoTIFF output.
 
+## References and credits
+
+Phiesta builds on public Earth-observation tools, data services, and research code:
+
+- **ΦSat-2 mission:** ESA ΦSat-2 mission pages.
+- **Sentinel-2 access:** Copernicus Data Space Ecosystem catalogue and OData download API.
+- **OrbitalAI / ΦSat-2 simulator:** public OrbitalAI challenge materials and simulator code, vendored in `third_party/orbitalai_phisat2_sim/`.
+- **Feature matching:** LightGlue for local feature matching.
+- **Land-cover context, when used:** ESA WorldCover 2021 v200.
+
+External services may require their own credentials and terms of use. Phiesta does not distribute proprietary platform-specific executables.

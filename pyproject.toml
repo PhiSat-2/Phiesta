@@ -23,7 +23,7 @@ dependencies = [
 include = ["phiesta", "phiesta.*", "third_party", "third_party.*"]
 
 [tool.setuptools.package-data]
-third_party = ["phisat2_exec/*.bin"]
+third_party = ["phisat2_exec/README.md"]
 
 [project.optional-dependencies]
 triplets = [

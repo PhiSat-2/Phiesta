@@ -1,12 +1,19 @@
 Phiesta documentation
-===========================
+=====================
 
-Phiesta is a research-oriented toolkit for ΦSat-2 product handling and
-Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplet generation.
+Phiesta provides Python tools for ΦSat-2 L1 loading, visualization, Sentinel-2 alignment, and strict georeferencing.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User guide
 
    overview
+   installation
+   georeferencing
+   api_quick_reference
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API reference
+
    api/modules

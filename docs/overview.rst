@@ -1,34 +1,29 @@
-Overview
-========
+Phiesta overview
+================
 
-Phiesta is a research-oriented Python package for working with ΦSat-2
-L0/L1 products and building Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets.
+Phiesta is a Python toolkit for working with ΦSat-2 L1 acquisitions.
 
-Main features
--------------
+Its main goal is to make the following workflow easy:
 
-- Load local ΦSat-2 L0 and L1 products.
-- Load ΦSat-2 L1 acquisitions from Insula.
-- Access spectral bands by index, wavelength, or alias.
-- Build RGB composites and simple spectral indices.
-- Register L0 and L1 products.
-- Use catalog geometry to compare ΦSat-2 and Sentinel-2.
-- Build full pixel-aligned Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets.
-- Run triplet generation in batch mode.
+1. load a ΦSat-2 L1 acquisition;
+2. inspect and visualize the product;
+3. find a nearby low-cloud Sentinel-2 acquisition;
+4. simulate Sentinel-2 into the ΦSat-2 spectral domain when needed;
+5. align Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 products;
+6. return a directly usable georeference dictionary.
 
-Typical public entry points
----------------------------
+Main entry points
+-----------------
 
-- ``phiesta.connect_insula``
-- ``phiesta.L1_event``
-- ``phiesta.L0_event``
-- ``event.build_full_sentinel_triplet()``
-- ``event.inspect_full_sentinel_triplet()``
-- ``event.show_full_sentinel_triplet()``
-- ``phiesta.triplets.batch.build_full_sentinel_triplets_batch``
+Load a local L1 product:
 
-Minimal triplet example
------------------------
+.. code-block:: python
+
+   from phiesta import L1_event
+
+   event = L1_event.from_path("/path/to/PHISAT-2_L1_...")
+
+Load from Insula:
 
 .. code-block:: python
 
@@ -37,19 +32,31 @@ Minimal triplet example
    client = connect_insula()
    event = client.load_l1("5359")
 
-   triplet = event.build_full_sentinel_triplet()
-   event.inspect_full_sentinel_triplet(triplet)
-   event.show_full_sentinel_triplet(triplet)
+Get a refined georeference:
 
-The final triplet contains:
+.. code-block:: python
 
-- real ΦSat-2 L1 image;
-- Sentinel-2B warped to the ΦSat-2 grid;
-- simulated ΦSat-2 generated from Sentinel-2B and warped to the real ΦSat-2 grid.
+   georef = event.get_georef(
+       sentinel_backend="download",
+       source="simulated",
+       verbose=True,
+   )
 
-Notes
------
+Useful output fields
+--------------------
 
-The final triplet rasters are primarily intended for pixel-aligned machine
-learning workflows. Their CRS/transform metadata should be treated as grid
-metadata unless further geodetic validation is performed.
+``event.get_georef(...)`` returns a dictionary containing:
+
+- ``quality``: quality label derived from alignment metrics;
+- ``corners_lonlat``: footprint corners as ``[lon, lat]`` pairs;
+- ``center_lonlat``: acquisition center as ``[lon, lat]``;
+- ``polygon_geojson``: GeoJSON polygon;
+- ``metrics``: matching and strict-alignment metrics;
+- ``paths``: report, preview image, warped products, matches and inliers.
+
+Documentation
+-------------
+
+- :doc:`installation`
+- :doc:`georeferencing`
+- :doc:`api_quick_reference`

@@ -16,6 +16,7 @@ dependencies = [
     "termcolor",
     "InsulaWorkflowClient",
     "pyproj",
+    "opencv-python",
 ]
 
 

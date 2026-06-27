@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 import pandas as pd
 import rasterio
-import torch
 
 from .proxy_alignment import (
     _normalize_u8,
@@ -323,6 +322,8 @@ def _estimate_strict_homography(
     Estimate residual H mapping source warped grid -> real grid.
     """
     source_u8 = _normalize_u8(source_img)
+    import torch
+
     real_u8 = _normalize_u8(real_img)
 
     source_small, source_scale = _resize_max(source_u8, max_side=matching_max_side)

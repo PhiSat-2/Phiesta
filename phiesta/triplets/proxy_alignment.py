@@ -8,7 +8,6 @@ import warnings
 import cv2
 import numpy as np
 import rasterio
-import torch
 
 from .simulation import simulate_phisat2_from_sentinel_crop
 from .rectification import rectify_simulated_catalog_crop
@@ -49,6 +48,8 @@ def _to_lightglue_tensor(
     device: str,
     features: str,
 ) -> torch.Tensor:
+    import torch
+
     img = img_u8.astype(np.float32) / 255.0
 
     if features.lower() == "sift":
@@ -93,6 +94,8 @@ def _estimate_lightglue_homography(
     """
     Estimate H mapping simulated rectified image pixels -> real image pixels.
     """
+    import torch
+
     real_u8 = _normalize_u8(real_img)
     sim_u8 = _normalize_u8(sim_img)
 

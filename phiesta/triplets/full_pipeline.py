@@ -52,8 +52,12 @@ def build_full_sentinel_triplet(
     event: Any,
     product_id: str | int | None = None,
     output_root: str | Path = "data/triplets",
-    window_days: int = 15,
-    max_cloud_cover: float = 20.0,
+    window_days: int = 60,
+    max_cloud_cover: float = 40.0,
+    min_coverage: float = 0.85,
+    source_w_time: float = 0.05,
+    source_w_cloud: float = 1.0,
+    max_candidates_to_verify: int = 20,
     buffer_km: float = 20.0,
     satellite: str = "S2B",
     proxy_target_size: tuple[int, int] = (1024, 1024),
@@ -89,7 +93,7 @@ def build_full_sentinel_triplet(
         data/triplets/<product_id>/final_triplet/
 
     Default strategy:
-        1. Find Sentinel-2B source around PhiSat-2 acquisition
+        1. Search Sentinel-2B candidates within a configurable temporal horizon
         2. Build a large Sentinel crop with buffer_km
         3. Run low-resolution proxy simulation
         4. Align proxy to real PhiSat-2 using LightGlue
@@ -118,6 +122,10 @@ def build_full_sentinel_triplet(
         satellite=satellite,
         window_days=window_days,
         max_cloud_cover=max_cloud_cover,
+        min_coverage=min_coverage,
+        w_time=source_w_time,
+        w_cloud=source_w_cloud,
+        max_candidates_to_verify=max_candidates_to_verify,
         buffer_km=buffer_km,
         run_sentinel_source=True,
         run_sentinel_crop=True,
@@ -205,6 +213,10 @@ def build_full_sentinel_triplet(
         "config": {
             "window_days": window_days,
             "max_cloud_cover": max_cloud_cover,
+            "min_coverage": min_coverage,
+            "source_w_time": source_w_time,
+            "source_w_cloud": source_w_cloud,
+            "max_candidates_to_verify": max_candidates_to_verify,
             "buffer_km": buffer_km,
             "satellite": satellite,
             "proxy_target_size": proxy_target_size,

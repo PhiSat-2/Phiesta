@@ -175,6 +175,12 @@ class L1_event:
         proxy_target_size=(1024, 1024),
         final_margin_pct=0.15,
         final_simulation_target_size=None,
+        window_days=60,
+        max_cloud_cover=40.0,
+        min_coverage=0.85,
+        source_w_time=0.05,
+        source_w_cloud=1.0,
+        max_candidates_to_verify=20,
         triplet_kwargs=None,
         strict_kwargs=None,
         verbose=True,
@@ -188,6 +194,10 @@ class L1_event:
         This builds a Sentinel-2 based triplet when no triplet is provided,
         then refines the alignment and returns corners, polygon GeoJSON,
         homographies, paths and quality metrics.
+
+        ``window_days`` is a Sentinel-2 search horizon, not a hard statement
+        about georeferencing validity. Final quality should be interpreted from
+        matching/inlier metrics and visual inspection.
         """
         if method != "sentinel_strict":
             raise ValueError("Only method='sentinel_strict' is currently supported.")
@@ -203,6 +213,12 @@ class L1_event:
                 proxy_target_size=proxy_target_size,
                 final_margin_pct=final_margin_pct,
                 final_simulation_target_size=final_simulation_target_size,
+                window_days=window_days,
+                max_cloud_cover=max_cloud_cover,
+                min_coverage=min_coverage,
+                source_w_time=source_w_time,
+                source_w_cloud=source_w_cloud,
+                max_candidates_to_verify=max_candidates_to_verify,
                 verbose=verbose,
                 **triplet_kwargs,
             )

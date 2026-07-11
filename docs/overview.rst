@@ -7,10 +7,10 @@ Its main goal is to make the following workflow easy:
 
 1. load a ΦSat-2 L1 acquisition;
 2. inspect and visualize the product;
-3. find a nearby low-cloud Sentinel-2 acquisition;
+3. search suitable Sentinel-2 reference acquisitions within a configurable temporal horizon;
 4. simulate Sentinel-2 into the ΦSat-2 spectral domain when needed;
 5. align Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 products;
-6. return a directly usable georeference dictionary.
+6. return a directly usable georeference dictionary with alignment-quality metrics.
 
 Main entry points
 -----------------

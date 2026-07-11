@@ -24,7 +24,7 @@ It provides a simple API to:
 - visualize multispectral bands, RGB, false color, and display stretches;
 - compute simple band statistics and diagnostics;
 - patchify acquisitions into ML-ready arrays;
-- search for a suitable Sentinel-2 acquisition;
+- search for suitable Sentinel-2 reference acquisitions within a configurable temporal horizon;
 - build Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets;
 - refine georeferencing with LightGlue-based alignment;
 - return a directly usable georeference object with corners, center, GeoJSON polygon, quality metrics, and output paths.
@@ -80,6 +80,8 @@ event = client.load_l1(PRODUCT_ID)
 georef = event.get_georef(
     sentinel_backend="download",
     source="simulated",
+    window_days=60,          # search horizon, not a hard validity threshold
+    max_cloud_cover=40.0,
     verbose=True,
 )
 

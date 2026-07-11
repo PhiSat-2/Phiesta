@@ -71,6 +71,17 @@ From a local L1 product
    out = Path(f"georef_{PRODUCT_ID}.json")
    out.write_text(json.dumps(georef, indent=2), encoding="utf-8")
 
+
+Source search strategy
+----------------------
+
+The Sentinel-2 temporal window is a configurable search horizon. It is not a
+hard georeferencing validity criterion. A closer Sentinel-2 acquisition is
+usually preferable, but the final georeference should be judged from alignment
+quality: matches, inliers, inlier ratio, residual errors, coverage and visual
+inspection. Larger temporal gaps can still be useful for georeferencing stable
+scene structures.
+
 Output structure
 ----------------
 

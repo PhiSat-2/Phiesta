@@ -171,19 +171,20 @@ def find_best_sentinel_source_for_bbox(
     target_datetime: str,
     satellite: str = "S2B",
     buffer_km: float = 10.0,
-    window_days: int = 15,
-    max_cloud_cover: float = 20.0,
+    window_days: int = 60,
+    max_cloud_cover: float = 40.0,
     min_coverage: float = 0.85,
-    w_time: float = 0.0,
+    w_time: float = 0.05,
     w_cloud: float = 1.0,
-    max_candidates_to_verify: int = 5,
+    max_candidates_to_verify: int = 20,
     session: requests.Session | None = None,
 ) -> SentinelSource:
     """
     Select the best Sentinel-2 source around a PhiSat-2 catalog footprint.
 
-    The selection currently favors low cloud cover and sufficient spatial coverage.
-    The temporal search window is symmetric around the PhiSat-2 acquisition date.
+    The temporal window is a configurable search horizon, not a georeferencing
+    validity criterion. Temporal proximity is used only as a weak prior; the
+    downstream alignment quality is assessed through matching/inlier metrics.
     """
     session = session or requests.Session()
 
@@ -339,6 +340,11 @@ def find_best_sentinel_source_for_bbox(
             "window_days": int(window_days),
             "max_cloud_cover": float(max_cloud_cover),
             "min_coverage": float(min_coverage),
+            "w_time": float(w_time),
+            "w_cloud": float(w_cloud),
+            "selection_score": float(best_score),
+            "selection_strategy": "coverage_and_cloud_with_weak_temporal_prior",
+            "max_candidates_to_verify": int(max_candidates_to_verify),
             "coverage_fraction": float(best["coverage_fraction"]),
             "num_tiles": len(best["products"]),
             "pairs": final_pairs,
@@ -352,9 +358,12 @@ def find_best_sentinel_source(
     product_id: str | None = None,
     satellite: str = "S2B",
     buffer_km: float = 10.0,
-    window_days: int = 15,
-    max_cloud_cover: float = 20.0,
+    window_days: int = 60,
+    max_cloud_cover: float = 40.0,
     min_coverage: float = 0.85,
+    w_time: float = 0.05,
+    w_cloud: float = 1.0,
+    max_candidates_to_verify: int = 20,
     session: requests.Session | None = None,
 ) -> SentinelSource:
     """
@@ -390,5 +399,8 @@ def find_best_sentinel_source(
         window_days=window_days,
         max_cloud_cover=max_cloud_cover,
         min_coverage=min_coverage,
+        w_time=w_time,
+        w_cloud=w_cloud,
+        max_candidates_to_verify=max_candidates_to_verify,
         session=session,
     )

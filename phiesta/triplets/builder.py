@@ -77,8 +77,8 @@ def build_sentinel_triplet(
     product_id: str | None = None,
     output_dir: str | Path = "data/triplets",
     satellite: str = "S2B",
-    window_days: int = 15,
-    max_cloud_cover: float = 20.0,
+    window_days: int = 60,
+    max_cloud_cover: float = 40.0,
     buffer_km: float = 10.0,
     match_band: str = "PAN",
     transform_model: str = "homography",
@@ -87,6 +87,9 @@ def build_sentinel_triplet(
     verbose: bool = True,
     run_sentinel_source: bool = True,
     min_coverage: float = 0.85,
+    w_time: float = 0.05,
+    w_cloud: float = 1.0,
+    max_candidates_to_verify: int = 20,
     run_sentinel_crop: bool = True,
     overwrite_crop: bool = False,
     sentinel_backend: str = "auto",
@@ -138,6 +141,10 @@ def build_sentinel_triplet(
             "satellite": satellite,
             "window_days": int(window_days),
             "max_cloud_cover": float(max_cloud_cover),
+            "min_coverage": float(min_coverage),
+            "source_w_time": float(w_time),
+            "source_w_cloud": float(w_cloud),
+            "max_candidates_to_verify": int(max_candidates_to_verify),
             "buffer_km": float(buffer_km),
             "match_band": str(match_band),
             "transform_model": str(transform_model),
@@ -154,7 +161,8 @@ def build_sentinel_triplet(
         if verbose:
             print(
                 f"[Phiesta] Searching {satellite} source "
-                f"(±{window_days}d, cloud<={max_cloud_cover}%, buffer={buffer_km} km)"
+                f"(horizon=±{window_days}d, cloud<={max_cloud_cover}%, "
+                f"coverage>={min_coverage:.2f}, weak_time_prior={w_time})"
             )
 
         source = find_best_sentinel_source(
@@ -165,6 +173,9 @@ def build_sentinel_triplet(
             window_days=window_days,
             max_cloud_cover=max_cloud_cover,
             min_coverage=min_coverage,
+            w_time=w_time,
+            w_cloud=w_cloud,
+            max_candidates_to_verify=max_candidates_to_verify,
         )
 
         triplet.sentinel_source = source

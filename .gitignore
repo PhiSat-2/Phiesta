@@ -19,5 +19,8 @@ scripts/*mangrove*.py
 *.egg-info/
 
 # Proprietary / local PhiSat-2 simulator executable
-third_party/phisat2_exec/
+# Bundle public PhiSat-2 simulator executables.
+# Only ignore local temporary files in this folder.
+third_party/phisat2_exec/*.tmp
+third_party/phisat2_exec/*.log
 reports/

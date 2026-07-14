@@ -15,6 +15,7 @@ from .window_from_proxy import estimate_final_sentinel_window_from_proxy
 from .sentinel_window_crop import crop_sentinel_window
 from .simulation import simulate_phisat2_from_sentinel_crop
 from .final_warp import warp_final_triplet_to_real_grid
+from .metrics import evaluate_real_sim_alignment
 
 
 def _infer_product_id(event: Any, product_id: str | int | None = None) -> str:
@@ -64,7 +65,7 @@ def build_full_sentinel_triplet(
     matching_max_side: int = 1800,
     features: str = "superpoint",
     max_keypoints: int = 8000,
-    final_margin_pct: float = 0.15,
+    final_margin_pct: float = 0.10,
     sentinel_backend: str = "auto",
     sentinel_cache_dir: str | Path = "cache/sentinel2",
     cdse_username: str | None = None,

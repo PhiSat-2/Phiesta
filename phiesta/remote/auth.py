@@ -1,4 +1,5 @@
-from getpass import getpass
+from getpass import os
+import getpass
 
 from .insula_client import InsulaClient
 from .constants import PHISAT2_BASE_URL
@@ -48,6 +49,8 @@ def connect_insula(
         client_id="api-client",
     )
 
+    if username is None:
+        username = username or os.environ.get("INSULA_USERNAME") or os.environ.get("INSULA_EMAIL")
     if username is None:
         username = input("Insula username/email: ")
     if password is None:

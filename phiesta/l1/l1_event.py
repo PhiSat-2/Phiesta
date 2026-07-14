@@ -173,7 +173,7 @@ class L1_event:
         sentinel_cache_dir="cache/sentinel2",
         buffer_km=20.0,
         proxy_target_size=(1024, 1024),
-        final_margin_pct=0.15,
+        final_margin_pct=0.10,
         final_simulation_target_size=None,
         window_days=60,
         max_cloud_cover=40.0,

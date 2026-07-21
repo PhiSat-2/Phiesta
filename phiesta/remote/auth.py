@@ -54,7 +54,7 @@ def connect_insula(
     if username is None:
         username = input("Insula username/email: ")
     if password is None:
-        password = getpass("Insula password: ")
+        password = getpass.getpass("Insula password: ")
 
     insula_auth.set_user_credentials(username=username, password=password)
 

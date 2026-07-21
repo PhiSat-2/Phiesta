@@ -1,4 +1,4 @@
-from getpass import os
+import os
 import getpass
 
 from .insula_client import InsulaClient

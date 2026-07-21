@@ -13,11 +13,14 @@ from ..sys_cfg import DATA_PATH
 from .constants import (
     PHISAT2_L0_COLLECTION,
     PHISAT2_L1_COLLECTION,
+    PHISAT2_L1C_COLLECTION,
+    PHISAT2_L1A_COLLECTION,
     DEFAULT_L0_DOWNLOAD_DIR,
     DEFAULT_L1_DOWNLOAD_DIR,
     VM_L0_ROOT,
     VM_L1_ROOT,
 )
+from phiesta.l1a import L1A_event
 
 from .catalog_geometry import (
     catalog_geo_from_feature,
@@ -384,6 +387,35 @@ class InsulaClient:
             **kwargs,
         )
     
+    def load_l1c(self, identifier, **kwargs):
+        """
+        Explicit alias for the current ΦSat-2 L1C-like products.
+
+        `load_l1(...)` is kept as a backward-compatible alias.
+        """
+        return self.load_l1(identifier, **kwargs)
+
+    def load_l1a(self, identifier, **kwargs):
+        """
+        Load a ΦSat-2 L1A product from Insula.
+
+        This requires PHISAT2_L1A_COLLECTION to be configured with the
+        corresponding Insula refDataCollection id.
+        """
+        if PHISAT2_L1A_COLLECTION is None:
+            raise RuntimeError(
+                "PHISAT2_L1A_COLLECTION is not configured yet. "
+                "Set the Insula L1A refDataCollection id in "
+                "phiesta.remote.constants before calling load_l1a(...)."
+            )
+
+        return L1A_event.from_insula_identifier(
+            identifier=identifier,
+            client=self,
+            ref_data_collection=PHISAT2_L1A_COLLECTION,
+            **kwargs,
+        )
+
     def load_l0(
         self,
         identifier: str,
@@ -476,6 +508,34 @@ class InsulaClient:
         )
         return folder
     
+    def download_l1c(self, identifier=None, **kwargs):
+        """
+        Explicit alias for downloading the current ΦSat-2 L1C-like products.
+
+        `download_l1(...)` is kept as a backward-compatible alias.
+        """
+        return self.download_l1(identifier=identifier, **kwargs)
+
+    def download_l1a(self, identifier=None, **kwargs):
+        """
+        Download a ΦSat-2 L1A product from Insula.
+
+        This requires PHISAT2_L1A_COLLECTION to be configured with the
+        corresponding Insula refDataCollection id.
+        """
+        if PHISAT2_L1A_COLLECTION is None:
+            raise RuntimeError(
+                "PHISAT2_L1A_COLLECTION is not configured yet. "
+                "Set the Insula L1A refDataCollection id in "
+                "phiesta.remote.constants before calling download_l1a(...)."
+            )
+
+        return self.download_ref_data(
+            identifier=identifier,
+            ref_data_collection=PHISAT2_L1A_COLLECTION,
+            **kwargs,
+        )
+
     def download_l0(
         self,
         identifier: str | None = None,

@@ -17,8 +17,10 @@ from .constants import (
     PHISAT2_L1A_COLLECTION,
     DEFAULT_L0_DOWNLOAD_DIR,
     DEFAULT_L1_DOWNLOAD_DIR,
+    DEFAULT_L1A_DOWNLOAD_DIR,
     VM_L0_ROOT,
     VM_L1_ROOT,
+    VM_L1A_ROOT,
 )
 from phiesta.l1a import L1A_event
 
@@ -45,7 +47,7 @@ def _extract_acq_id(text: str | None) -> Optional[str]:
     if text is None:
         return None
     s = str(text)
-    m = re.search(r"PHISAT-2_L[01]_(\d+)_", s)
+    m = re.search(r"PHISAT-2_L[0-9A-Z]+_(\d+)_", s)
     if m is None:
         return None
     out = m.group(1).lstrip("0")
@@ -408,6 +410,8 @@ class InsulaClient:
                 "Set the Insula L1A refDataCollection id in "
                 "phiesta.remote.constants before calling load_l1a(...)."
             )
+
+        kwargs.setdefault("dest_dir", DEFAULT_L1A_DOWNLOAD_DIR)
 
         return L1A_event.from_insula_identifier(
             identifier=identifier,

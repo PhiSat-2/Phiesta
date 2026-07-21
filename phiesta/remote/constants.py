@@ -11,11 +11,13 @@ PHISAT2_L1C_COLLECTION = "phisat24e55ba83dd304ea9b018b65e9b17a7de"
 PHISAT2_L1_COLLECTION = PHISAT2_L1C_COLLECTION
 
 # Fill this once the Insula L1A refDataCollection id is confirmed.
-PHISAT2_L1A_COLLECTION = None
+PHISAT2_L1A_COLLECTION = "phisat2e08517fa85aa4a319e0276ba73fef424"
 
 DEFAULT_DOWNLOAD_DIR = DATA_PATH
 DEFAULT_L0_DOWNLOAD_DIR = DEFAULT_DOWNLOAD_DIR / "l0"
 DEFAULT_L1_DOWNLOAD_DIR = DEFAULT_DOWNLOAD_DIR / "l1"
+DEFAULT_L1A_DOWNLOAD_DIR = DATA_PATH / "l1a"
 
 VM_L0_ROOT = Path("/shared/projects/phisat2/data/raw/phisat2/L0")
 VM_L1_ROOT = Path("/shared/projects/phisat2/data/raw/phisat2/L1")
+VM_L1A_ROOT = "/shared/projects/phisat2/data/raw/phisat2/L1A"

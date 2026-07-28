@@ -12,6 +12,12 @@ from phiesta.products import (
     quality_report,
     quality_table,
     product_gallery,
+    compare_processing_switches,
+    compare_levels,
+)
+
+from phiesta.geometry import (
+    interband_shift_table,
 )
 
 __all__ = [
@@ -27,4 +33,7 @@ __all__ = [
     "quality_report",
     "quality_table",
     "product_gallery",
+    "compare_processing_switches",
+    "compare_levels",
+    "interband_shift_table",
 ]

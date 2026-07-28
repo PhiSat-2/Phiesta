@@ -19,6 +19,11 @@ from .gallery import (
     product_gallery,
 )
 
+from .compare import (
+    compare_processing_switches,
+    compare_levels,
+)
+
 __all__ = [
     "open_product",
     "classify_product_file",
@@ -31,4 +36,6 @@ __all__ = [
     "quality_report",
     "quality_table",
     "product_gallery",
+    "compare_processing_switches",
+    "compare_levels",
 ]

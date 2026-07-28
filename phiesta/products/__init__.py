@@ -1,7 +1,6 @@
-from phiesta.remote.auth import connect_insula
+from .opening import open_product
 
-from phiesta.products import (
-    open_product,
+from .anatomy import (
     classify_product_file,
     file_manifest,
     file_family_summary,
@@ -12,7 +11,6 @@ from phiesta.products import (
 )
 
 __all__ = [
-    "connect_insula",
     "open_product",
     "classify_product_file",
     "file_manifest",

@@ -8,8 +8,18 @@ OUT = Path("outputs/examples/product_inspection_quickstart")
 OUT.mkdir(parents=True, exist_ok=True)
 
 
+def make_json_safe(obj):
+    if isinstance(obj, float) and obj != obj:
+        return None
+    if isinstance(obj, dict):
+        return {k: make_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [make_json_safe(v) for v in obj]
+    return obj
+
+
 def save_json(obj, path):
-    path.write_text(json.dumps(obj, indent=2, default=str))
+    path.write_text(json.dumps(make_json_safe(obj), indent=2, default=str))
     print("wrote", path)
 
 
@@ -31,14 +41,14 @@ def main():
     rasters.to_csv(OUT / "6008_l1c_raster_inventory.csv", index=False)
 
     print("\n=== Product card ===")
-    print(json.dumps(card, indent=2, default=str))
+    print(json.dumps(make_json_safe(card), indent=2, default=str))
 
     # 3. Compute a heuristic visual/product screening report.
     quality = phiesta.quality_report(l1c)
     save_json(quality, OUT / "6008_l1c_quality_report.json")
 
     print("\n=== Quality report ===")
-    print(json.dumps(quality, indent=2, default=str))
+    print(json.dumps(make_json_safe(quality), indent=2, default=str))
 
     # 4. Build a screening gallery from product ids.
     product_ids = ["5978", "5979", "5980", "5987", "6008", "6018", "6025", "6038", "6040", "6041", "6045"]
@@ -58,7 +68,7 @@ def main():
         save_json(comparison, OUT / "6008_l1a_l1c_comparison.json")
 
         print("\n=== L1A/L1C inter-band shift summary ===")
-        print(json.dumps(comparison["interband_shift"], indent=2, default=str))
+        print(json.dumps(make_json_safe(comparison["interband_shift"]), indent=2, default=str))
 
         shifts_l1a = phiesta.interband_shift_table(l1a, master_band=2)
         shifts_l1c = phiesta.interband_shift_table(l1c, master_band=2)

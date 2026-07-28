@@ -9,6 +9,8 @@ from phiesta.products import (
     raster_inventory,
     product_card,
     compare_product_folders,
+    quality_report,
+    quality_table,
 )
 
 __all__ = [
@@ -21,4 +23,6 @@ __all__ = [
     "raster_inventory",
     "product_card",
     "compare_product_folders",
+    "quality_report",
+    "quality_table",
 ]

@@ -10,6 +10,11 @@ from .anatomy import (
     compare_product_folders,
 )
 
+from .quality import (
+    quality_report,
+    quality_table,
+)
+
 __all__ = [
     "open_product",
     "classify_product_file",
@@ -19,4 +24,6 @@ __all__ = [
     "raster_inventory",
     "product_card",
     "compare_product_folders",
+    "quality_report",
+    "quality_table",
 ]

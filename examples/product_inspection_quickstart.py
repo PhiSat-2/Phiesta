@@ -50,6 +50,18 @@ def main():
     print("\n=== Quality report ===")
     print(json.dumps(make_json_safe(quality), indent=2, default=str))
 
+    # 3b. Compare the product against mission-level expectations.
+    mission_report = phiesta.mission_spec_report(l1c)
+    save_json(mission_report, OUT / "6008_l1c_mission_spec_report.json")
+
+    print("\n=== Mission spec report ===")
+    print(json.dumps(make_json_safe({
+        "product_id": mission_report["product_id"],
+        "level": mission_report["level"],
+        "overall_ok": mission_report["overall_ok"],
+        "checks": mission_report["checks"],
+    }), indent=2, default=str))
+
     # 4. Build a screening gallery from product ids.
     product_ids = ["5978", "5979", "5980", "5987", "6008", "6018", "6025", "6038", "6040", "6041", "6045"]
     gallery_table = phiesta.product_gallery(

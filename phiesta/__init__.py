@@ -20,6 +20,12 @@ from phiesta.geometry import (
     interband_shift_table,
 )
 
+from phiesta.specs import (
+    phisat2_band_table,
+    phisat2_product_level_specs,
+    mission_spec_report,
+)
+
 __all__ = [
     "connect_insula",
     "open_product",
@@ -36,4 +42,7 @@ __all__ = [
     "compare_processing_switches",
     "compare_levels",
     "interband_shift_table",
+    "phisat2_band_table",
+    "phisat2_product_level_specs",
+    "mission_spec_report",
 ]

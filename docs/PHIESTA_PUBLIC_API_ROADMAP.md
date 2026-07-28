@@ -56,6 +56,22 @@ Goal:
     phiesta.radiometry_scatter(event_a, event_b)
     phiesta.radiometry_histograms(event_a, event_b)
 
+### 4. Gallery and screening
+
+Goal:
+
+    phiesta.product_gallery(...)
+    phiesta.quality_table(...)
+    phiesta.select_good_candidates(...)
+
+### 5. Sentinel-2 / triplet workflows
+
+Goal:
+
+    event.build_full_sentinel_triplet(...)
+    triplet.summary()
+    triplet.inspect()
+
 ## Publication framing
 
 Phiesta should be framed as a product-level toolkit for PhiSat-2 imagery:

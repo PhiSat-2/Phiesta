@@ -76,7 +76,13 @@ def main():
     # 5. Compare two processing levels from the same acquisition when both are available.
     try:
         l1a = phiesta.open_product("6008", level="L1A")
-        comparison = phiesta.compare_levels(l1a, l1c, include_shift=True, master_band=2)
+        comparison = phiesta.compare_levels(
+            l1a,
+            l1c,
+            include_shift=True,
+            include_mission_specs=True,
+            master_band=2,
+        )
         save_json(comparison, OUT / "6008_l1a_l1c_comparison.json")
 
         print("\n=== L1A/L1C inter-band shift summary ===")

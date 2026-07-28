@@ -50,6 +50,7 @@ def compare_levels(
     right: Any,
     *,
     include_shift: bool = True,
+    include_mission_specs: bool = True,
     master_band=2,
     max_side: int = 1024,
 ) -> dict:
@@ -105,6 +106,28 @@ def compare_levels(
             "note": "Fast global phase-correlation diagnostic using existing Phiesta registration utilities.",
             "left": _shift_summary(left, master_band=master_band, max_side=max_side),
             "right": _shift_summary(right, master_band=master_band, max_side=max_side),
+        }
+
+    if include_mission_specs:
+        from phiesta.specs import mission_spec_report
+
+        left_mission = mission_spec_report(left)
+        right_mission = mission_spec_report(right)
+
+        report["mission_specs"] = {
+            "note": "Mission-aware consistency checks against encoded PhiSat-2 product-level expectations.",
+            "left": {
+                "overall_ok": left_mission["overall_ok"],
+                "level": left_mission["level"],
+                "spec": left_mission["spec"],
+                "checks": left_mission["checks"],
+            },
+            "right": {
+                "overall_ok": right_mission["overall_ok"],
+                "level": right_mission["level"],
+                "spec": right_mission["spec"],
+                "checks": right_mission["checks"],
+            },
         }
 
     return report

@@ -337,7 +337,7 @@ Phiesta is an early research-oriented toolkit. APIs may evolve as the georeferen
 
 ## Product-level inspection API
 
-Phiesta provides product-level utilities for opening, inspecting, screening, and comparing PhiSat-2 products.
+Phiesta provides product-level utilities for opening, inspecting, screening, comparing, and mission-checking PhiSat-2 products.
 
 ### Basic usage
 
@@ -382,6 +382,20 @@ comparison = phiesta.compare_levels(
 )
 ```
 
+### Mission-aware specification report
+
+```python
+import phiesta
+
+event = phiesta.open_product("6008", level="L1C")
+
+mission_report = phiesta.mission_spec_report(event)
+band_table = phiesta.phisat2_band_table()
+level_specs = phiesta.phisat2_product_level_specs()
+```
+
+The mission-aware report checks observed product metadata against encoded PhiSat-2 product expectations, including image shape, band count, georeferencing presence, CRS metadata, radiance/reflectance level, and expected band-alignment behaviour.
+
 ### Quickstart example
 
 Run from the repository root:
@@ -399,5 +413,6 @@ The example demonstrates:
 - raster inventory extraction;
 - heuristic product screening;
 - annotated product galleries;
+- mission-aware product specification checks;
 - L1A/L1C comparison with inter-band shift diagnostics.
 

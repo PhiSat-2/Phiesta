@@ -334,3 +334,70 @@ External services may require their own credentials and terms of use. Phiesta do
 ## Status
 
 Phiesta is an early research-oriented toolkit. APIs may evolve as the georeferencing workflow, strict alignment strategy, and documentation are improved.
+
+## Product-level inspection API
+
+Phiesta provides product-level utilities for opening, inspecting, screening, and comparing PhiSat-2 products.
+
+### Basic usage
+
+```python
+import phiesta
+
+event = phiesta.open_product("6008", level="L1C")
+
+card = phiesta.product_card(event)
+manifest = phiesta.file_manifest(event)
+families = phiesta.file_family_summary(event)
+switches = phiesta.processing_switches(event)
+rasters = phiesta.raster_inventory(event)
+
+quality = phiesta.quality_report(event)
+```
+
+### Product gallery
+
+```python
+import phiesta
+
+df = phiesta.product_gallery(
+    ["5978", "5979", "6008", "6025"],
+    level="L1C",
+    out_path="outputs/l1c_screening_gallery.png",
+)
+```
+
+### Processing-level comparison
+
+```python
+import phiesta
+
+l1a = phiesta.open_product("6008", level="L1A")
+l1c = phiesta.open_product("6008", level="L1C")
+
+comparison = phiesta.compare_levels(
+    l1a,
+    l1c,
+    include_shift=True,
+)
+```
+
+### Quickstart example
+
+Run from the repository root:
+
+```bash
+PYTHONPATH="$PWD" python examples/product_inspection_quickstart.py
+```
+
+On the ESA PhiLab container environment, use `phipy` instead of `python`.
+
+The example demonstrates:
+
+- product cards and file manifests;
+- processing-switch inspection;
+- raster inventory extraction;
+- heuristic product screening;
+- annotated product galleries;
+- L1A/L1C comparison with inter-band shift diagnostics.
+

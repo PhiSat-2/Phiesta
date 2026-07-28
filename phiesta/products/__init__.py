@@ -15,6 +15,10 @@ from .quality import (
     quality_table,
 )
 
+from .gallery import (
+    product_gallery,
+)
+
 __all__ = [
     "open_product",
     "classify_product_file",
@@ -26,4 +30,5 @@ __all__ = [
     "compare_product_folders",
     "quality_report",
     "quality_table",
+    "product_gallery",
 ]

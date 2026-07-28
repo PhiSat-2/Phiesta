@@ -11,6 +11,7 @@ from phiesta.products import (
     compare_product_folders,
     quality_report,
     quality_table,
+    product_gallery,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "compare_product_folders",
     "quality_report",
     "quality_table",
+    "product_gallery",
 ]

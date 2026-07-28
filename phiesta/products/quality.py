@@ -26,11 +26,9 @@ def _preferred_display_raster(root: Path) -> Path | None:
         if p.exists():
             return p
 
-    rasters = sorted((root / "bands").glob("*.tif*")) if (root / "bands").exists() else []
-    if rasters:
-        return rasters[0]
-
-    return None
+    bands_dir = root / "bands"
+    rasters = sorted(bands_dir.glob("*.tif*")) if bands_dir.exists() else []
+    return rasters[0] if rasters else None
 
 
 def _robust01(x: np.ndarray, percentiles=(2, 98)) -> np.ndarray:
@@ -53,8 +51,8 @@ def _select_display_bands(arr: np.ndarray) -> np.ndarray:
     """
     arr shape: C, H, W.
 
-    For 8-band PhiSat-2 stacks, use display RGB from bands [3, 2, 1]
-    in zero-based indexing, corresponding to rasterio read bands [4, 3, 2].
+    For 8-band PhiSat-2 stacks, use display RGB from zero-based bands [3, 2, 1],
+    corresponding to rasterio read bands [4, 3, 2].
     """
     c = arr.shape[0]
 
@@ -156,7 +154,7 @@ def quality_report(product: Any, *, max_side: int = 1024) -> dict[str, Any]:
         report.update({
             "raster": None,
             "score": 0.0,
-            "recommendation": "reject_or_inspect_manually",
+            "recommendation": "inspect_manually",
             "flags": flags,
         })
         return report
@@ -168,20 +166,20 @@ def quality_report(product: Any, *, max_side: int = 1024) -> dict[str, Any]:
         report.update({
             "raster": str(raster),
             "score": 0.0,
-            "recommendation": "reject_or_inspect_manually",
+            "recommendation": "inspect_manually",
             "flags": flags,
             "error": f"{type(e).__name__}: {e}",
         })
         return report
 
     gray = np.nanmean(rgb, axis=-1)
+
     finite_fraction = float(np.mean(np.isfinite(rgb)))
     dark_fraction = float(np.mean(gray < 0.05))
     bright_fraction = float(np.mean(gray > 0.95))
     texture_score = float(np.nanstd(gray))
     edge_density = _edge_density(gray)
 
-    # Very simple visual-screening score.
     texture_component = min(texture_score / 0.18, 1.0)
     edge_component = min(edge_density / 0.12, 1.0)
     dark_component = 1.0 - min(dark_fraction / 0.70, 1.0)
@@ -194,24 +192,39 @@ def quality_report(product: Any, *, max_side: int = 1024) -> dict[str, Any]:
         + 0.15 * bright_component
     )
 
+    # Conservative display-screening flags.
+    # These are not physical cloud/quality labels; they indicate whether the
+    # product is a good visual/diagnostic candidate.
     if finite_fraction < 0.98:
         flags.append("many_non_finite_pixels")
         score *= 0.5
-    if dark_fraction > 0.70:
-        flags.append("mostly_dark")
-    if bright_fraction > 0.70:
-        flags.append("mostly_bright_or_cloudy")
-    if texture_score < 0.04:
-        flags.append("low_texture")
-    if edge_density < 0.02:
-        flags.append("low_edge_density")
+    if dark_fraction > 0.25:
+        flags.append("high_display_dark_fraction")
+    if bright_fraction > 0.20:
+        flags.append("high_display_bright_fraction")
+    if texture_score < 0.16:
+        flags.append("low_display_texture")
+    if edge_density < 0.12:
+        flags.append("low_display_edge_density")
 
-    if score >= 0.70 and not flags:
-        recommendation = "good_visual_candidate"
-    elif score >= 0.45:
+    # Hard caps: weak visual structure should not be called a clean candidate.
+    if dark_fraction > 0.25 or bright_fraction > 0.20:
+        score = min(score, 0.65)
+    if edge_density < 0.12:
+        score = min(score, 0.65)
+    if texture_score < 0.16:
+        score = min(score, 0.70)
+    if "missing_bands" in flags or "missing_display_raster" in flags:
+        score = min(score, 0.30)
+    if "missing_geolocation_for_l1c" in flags or "missing_crs_for_l1c" in flags:
+        score = min(score, 0.45)
+
+    if score >= 0.75 and not flags:
+        recommendation = "good_display_candidate"
+    elif score >= 0.50:
         recommendation = "usable_with_caution"
     else:
-        recommendation = "poor_visual_candidate"
+        recommendation = "inspect_manually"
 
     report.update({
         **raster_meta,

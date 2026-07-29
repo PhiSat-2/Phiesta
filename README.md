@@ -416,3 +416,19 @@ The example demonstrates:
 - mission-aware product specification checks;
 - L1A/L1C comparison with inter-band shift diagnostics.
 
+### Raw L0 inspection
+
+Phiesta can inspect downloaded raw L0 product folders without requiring the external rawbin converter.
+
+```python
+import phiesta
+
+report = phiesta.raw_l0_report(
+    "data/l0/PHISAT-2_L0_000005090_20260416151102_20260416151105_18CCC616"
+)
+```
+
+A raw L0 folder typically contains `raw.bin`, `metadata.json`, `ancillary.json`, `aocs.json`, and a thumbnail.
+
+Building a prepared `L0_event` from `raw.bin` requires the external Simera/SENSE conversion code, configured through `PHIESTA_SIM_ROOT`. This external converter is not redistributed with Phiesta.
+

@@ -418,17 +418,30 @@ The example demonstrates:
 
 ### Raw L0 inspection
 
-Phiesta can inspect downloaded raw L0 product folders without requiring the external rawbin converter.
+Phiesta can open or download raw L0 product folders without requiring the external rawbin converter.
 
 ```python
 import phiesta
 
-report = phiesta.raw_l0_report(
-    "data/l0/PHISAT-2_L0_000005090_20260416151102_20260416151105_18CCC616"
-)
+raw_folder = phiesta.open_raw_l0_product("5090")
+report = phiesta.raw_l0_report(raw_folder)
 ```
 
 A raw L0 folder typically contains `raw.bin`, `metadata.json`, `ancillary.json`, `aocs.json`, and a thumbnail.
 
 Building a prepared `L0_event` from `raw.bin` requires the external Simera/SENSE conversion code, configured through `PHIESTA_SIM_ROOT`. This external converter is not redistributed with Phiesta.
+
+Use:
+
+```python
+raw_folder = phiesta.open_raw_l0_product("5090")
+```
+
+for public raw-folder access, and:
+
+```python
+l0 = phiesta.open_product("5090", level="L0")
+```
+
+only when the external converter is configured and a prepared `L0_event` is desired.
 

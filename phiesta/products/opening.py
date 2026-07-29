@@ -12,8 +12,6 @@ def _find_local_product(identifier: str | int | Path, level: str) -> Path | None
     level_u = level.upper()
     s = str(identifier)
 
-    candidates: list[Path] = []
-
     if s.isdigit():
         pid9 = f"{int(s):09d}"
 
@@ -32,6 +30,7 @@ def _find_local_product(identifier: str | int | Path, level: str) -> Path | None
             f"data/l1a/{s}*",
         ]
 
+    candidates: list[Path] = []
     for pat in patterns:
         candidates.extend(sorted(Path(".").glob(pat)))
 
@@ -43,6 +42,7 @@ def open_raw_l0_product(
     *,
     client: Any = None,
     prefer_local: bool = True,
+    download_missing: bool = True,
     **kwargs,
 ) -> Path:
     """
@@ -58,6 +58,12 @@ def open_raw_l0_product(
         if local_path is not None:
             return Path(local_path)
 
+    if not download_missing:
+        raise FileNotFoundError(
+            f"No local raw L0 product found for {identifier!r}. "
+            "Set download_missing=True to allow Insula fallback."
+        )
+
     c = client or connect_insula()
     return Path(c.load_l0(str(identifier), convert=False, **kwargs))
 
@@ -68,6 +74,7 @@ def open_product(
     level: str = "L1C",
     client: Any = None,
     prefer_local: bool = True,
+    download_missing: bool = True,
     **kwargs,
 ):
     """
@@ -79,6 +86,9 @@ def open_product(
     - a local product folder path.
 
     level is one of: "L0", "L1", "L1C", "L1A".
+
+    By default, missing products are downloaded through Insula.
+    Set download_missing=False for local-only behaviour.
     """
     from phiesta.remote.auth import connect_insula
     from phiesta.l0.l0_event import L0_event
@@ -87,8 +97,12 @@ def open_product(
 
     level_u = level.upper()
 
+    if level_u not in {"L0", "L1A", "L1", "L1C"}:
+        raise ValueError(f"Unsupported level: {level!r}. Expected L0, L1A, L1, or L1C.")
+
     if prefer_local:
         local_path = _find_local_product(identifier, level_u)
+
         if local_path is not None:
             if level_u == "L0":
                 if kwargs.get("convert") is False:
@@ -101,22 +115,31 @@ def open_product(
                     clean_kwargs.pop("convert", None)
                     return L0_event.from_path(local_path, **clean_kwargs)
 
-                # Local raw L0 exists, but prepared TIFFs are absent.
-                # Continue to the Insula L0 loader: it will reuse the local raw
-                # folder and either convert it, or raise a clear missing-converter
-                # error if PHIESTA_SIM_ROOT is not configured.
-            elif level_u == "L1A":
+                raise FileNotFoundError(
+                    f"Local raw L0 product found for {identifier!r}, but no prepared "
+                    "L0_event stack is present. Use open_raw_l0_product(...) and "
+                    "raw_l0_report(...) for raw inspection, or configure the external "
+                    "Simera/SENSE converter and call open_product(..., level='L0')."
+                )
+
+            if level_u == "L1A":
                 return L1A_event.from_path(local_path, **kwargs)
-            elif level_u in {"L1", "L1C"}:
+
+            if level_u in {"L1", "L1C"}:
                 return L1_event.from_path(local_path, **kwargs)
+
+    if not download_missing:
+        raise FileNotFoundError(
+            f"No local {level_u} product found for {identifier!r}. "
+            "Set download_missing=True to allow Insula fallback."
+        )
 
     c = client or connect_insula()
 
     if level_u == "L0":
         return c.load_l0(str(identifier), **kwargs)
+
     if level_u == "L1A":
         return c.load_l1a(str(identifier), **kwargs)
-    if level_u in {"L1", "L1C"}:
-        return c.load_l1c(str(identifier), **kwargs)
 
-    raise ValueError(f"Unsupported level: {level!r}. Expected L0, L1A, L1, or L1C.")
+    return c.load_l1c(str(identifier), **kwargs)

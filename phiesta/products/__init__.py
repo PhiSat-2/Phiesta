@@ -1,4 +1,4 @@
-from .opening import open_product
+from .opening import open_product, open_raw_l0_product
 
 from .anatomy import (
     classify_product_file,
@@ -26,6 +26,7 @@ from .compare import (
 
 __all__ = [
     "open_product",
+    "open_raw_l0_product",
     "classify_product_file",
     "file_manifest",
     "file_family_summary",

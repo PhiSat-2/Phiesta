@@ -38,6 +38,30 @@ def _find_local_product(identifier: str | int | Path, level: str) -> Path | None
     return candidates[0] if candidates else None
 
 
+def open_raw_l0_product(
+    identifier: str | int | Path,
+    *,
+    client: Any = None,
+    prefer_local: bool = True,
+    **kwargs,
+) -> Path:
+    """
+    Open or download a raw PhiSat-2 L0 product folder without decoding raw.bin.
+
+    This is the public API for raw L0 access. It does not require the external
+    Simera/SENSE rawbin converter.
+    """
+    from phiesta.remote.auth import connect_insula
+
+    if prefer_local:
+        local_path = _find_local_product(identifier, "L0")
+        if local_path is not None:
+            return Path(local_path)
+
+    c = client or connect_insula()
+    return Path(c.load_l0(str(identifier), convert=False, **kwargs))
+
+
 def open_product(
     identifier: str | int | Path,
     *,
@@ -67,10 +91,23 @@ def open_product(
         local_path = _find_local_product(identifier, level_u)
         if local_path is not None:
             if level_u == "L0":
-                return L0_event.from_path(local_path, **kwargs)
-            if level_u == "L1A":
+                if kwargs.get("convert") is False:
+                    return Path(local_path)
+
+                from phiesta.l0.l0_event import _looks_prepared_for_l0_event
+
+                if _looks_prepared_for_l0_event(local_path):
+                    clean_kwargs = dict(kwargs)
+                    clean_kwargs.pop("convert", None)
+                    return L0_event.from_path(local_path, **clean_kwargs)
+
+                # Local raw L0 exists, but prepared TIFFs are absent.
+                # Continue to the Insula L0 loader: it will reuse the local raw
+                # folder and either convert it, or raise a clear missing-converter
+                # error if PHIESTA_SIM_ROOT is not configured.
+            elif level_u == "L1A":
                 return L1A_event.from_path(local_path, **kwargs)
-            if level_u in {"L1", "L1C"}:
+            elif level_u in {"L1", "L1C"}:
                 return L1_event.from_path(local_path, **kwargs)
 
     c = client or connect_insula()

@@ -4,6 +4,7 @@ from phiesta.l0 import raw_l0_report, raw_l0_table
 
 from phiesta.products import (
     open_product,
+    open_raw_l0_product,
     classify_product_file,
     file_manifest,
     file_family_summary,
@@ -33,6 +34,7 @@ __all__ = [
     "raw_l0_report",
     "raw_l0_table",
     "open_product",
+    "open_raw_l0_product",
     "classify_product_file",
     "file_manifest",
     "file_family_summary",

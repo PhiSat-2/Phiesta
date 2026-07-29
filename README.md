@@ -471,3 +471,47 @@ report = phiesta.acquisition_report("5090", download_missing=True)
 
 to allow Insula fallback for missing levels.
 
+## Data access behaviour
+
+Phiesta uses a local-first strategy for PhiSat-2 products.
+
+By default, product-opening helpers first look for an already available local product folder. If the requested product is missing locally, Phiesta can fall back to Insula when `download_missing=True`.
+
+For public examples and reproducible local workflows, use `download_missing=False`:
+
+```python
+import phiesta
+
+event = phiesta.open_product("6008", level="L1C", download_missing=False)
+```
+
+With `download_missing=False`, Phiesta never triggers remote authentication. Missing products raise `FileNotFoundError`.
+
+To allow remote fallback through Insula, use:
+
+```python
+event = phiesta.open_product("6008", level="L1C", download_missing=True)
+```
+
+In that case, Phiesta tries local resolution first, then requests Insula credentials only if the product is not available locally.
+
+Raw L0 access is separated from prepared L0 decoding:
+
+```python
+raw_folder = phiesta.open_raw_l0_product("5090", download_missing=True)
+report = phiesta.raw_l0_report(raw_folder)
+```
+
+This opens or downloads the raw L0 product folder without decoding `raw.bin`.
+
+A raw L0 folder typically contains `raw.bin`, `metadata.json`, `ancillary.json`, `aocs.json`, and a thumbnail.
+
+Building a prepared `L0_event` from `raw.bin` requires the external Simera/SENSE conversion code, configured through `PHIESTA_SIM_ROOT`. This converter is not redistributed with Phiesta.
+
+Summary:
+
+- `open_product(..., download_missing=False)`: local-only, never asks for Insula credentials.
+- `open_product(..., download_missing=True)`: local-first, then Insula fallback if missing.
+- `open_raw_l0_product(..., download_missing=True)`: raw L0 access/download without requiring the external converter.
+- `open_product(..., level="L0")`: builds a prepared `L0_event`; this requires the external converter when only raw L0 data is present.
+

@@ -23,6 +23,7 @@ from .compare import (
     compare_processing_switches,
     compare_levels,
 )
+from .acquisition import acquisition_report
 
 __all__ = [
     "open_product",
@@ -41,5 +42,3 @@ __all__ = [
     "compare_levels",
     "acquisition_report",
 ]
-
-from .acquisition import acquisition_report

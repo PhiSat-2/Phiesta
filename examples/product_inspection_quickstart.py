@@ -62,6 +62,17 @@ def main():
         "checks": mission_report["checks"],
     }), indent=2, default=str))
 
+    # 3c. Acquisition-level report across available product levels.
+    acquisition = phiesta.acquisition_report("6008", download_missing=False)
+    save_json(acquisition, OUT / "6008_acquisition_report.json")
+
+    print("\n=== Acquisition report ===")
+    print(json.dumps(make_json_safe({
+        "identifier": acquisition["identifier"],
+        "summary": acquisition["summary"],
+        "has_l1a_l1c_comparison": acquisition["l1a_l1c_comparison"] is not None,
+    }), indent=2, default=str))
+
     # 4. Build a screening gallery from product ids.
     product_ids = ["5978", "5979", "5980", "5987", "6008", "6018", "6025", "6038", "6040", "6041", "6045"]
     gallery_table = phiesta.product_gallery(

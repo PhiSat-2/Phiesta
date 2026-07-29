@@ -445,3 +445,29 @@ l0 = phiesta.open_product("5090", level="L0")
 
 only when the external converter is configured and a prepared `L0_event` is desired.
 
+### Acquisition-level report
+
+Phiesta can summarize all locally available product levels for the same acquisition.
+
+```python
+import phiesta
+
+report = phiesta.acquisition_report("6008")
+```
+
+By default, `acquisition_report` is local-only and does not trigger new Insula downloads. It reports available and missing levels, raw L0 availability, L1A/L1C product cards, mission-spec checks, and an L1A/L1C comparison when both processed levels are available.
+
+Use:
+
+```python
+report = phiesta.acquisition_report("5090", download_missing=False)
+```
+
+to inspect only already available local products, or:
+
+```python
+report = phiesta.acquisition_report("5090", download_missing=True)
+```
+
+to allow Insula fallback for missing levels.
+

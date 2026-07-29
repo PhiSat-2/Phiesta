@@ -1,5 +1,7 @@
 from phiesta.remote.auth import connect_insula
 
+from phiesta.l0 import raw_l0_report, raw_l0_table
+
 from phiesta.products import (
     open_product,
     classify_product_file,
@@ -28,6 +30,8 @@ from phiesta.specs import (
 
 __all__ = [
     "connect_insula",
+    "raw_l0_report",
+    "raw_l0_table",
     "open_product",
     "classify_product_file",
     "file_manifest",

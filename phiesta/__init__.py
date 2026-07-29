@@ -17,6 +17,7 @@ from phiesta.products import (
     product_gallery,
     compare_processing_switches,
     compare_levels,
+    acquisition_report,
 )
 
 from phiesta.geometry import (
@@ -47,6 +48,7 @@ __all__ = [
     "product_gallery",
     "compare_processing_switches",
     "compare_levels",
+    "acquisition_report",
     "interband_shift_table",
     "phisat2_band_table",
     "phisat2_product_level_specs",

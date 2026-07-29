@@ -39,4 +39,7 @@ __all__ = [
     "product_gallery",
     "compare_processing_switches",
     "compare_levels",
+    "acquisition_report",
 ]
+
+from .acquisition import acquisition_report

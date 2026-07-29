@@ -29,6 +29,7 @@ def product_gallery(
     ncols: int = 4,
     sort_by: str | None = None,
     prefer_local: bool = True,
+    download_missing: bool = True,
 ) -> pd.DataFrame:
     """
     Render a visual gallery of PhiSat-2 products with heuristic screening scores.

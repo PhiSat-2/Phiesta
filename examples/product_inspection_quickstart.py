@@ -25,7 +25,7 @@ def save_json(obj, path):
 
 def main():
     # 1. Open one local or remote PhiSat-2 product.
-    l1c = phiesta.open_product("6008", level="L1C")
+    l1c = phiesta.open_product("6008", level="L1C", download_missing=False)
 
     # 2. Inspect product content.
     card = phiesta.product_card(l1c)
@@ -86,7 +86,7 @@ def main():
 
     # 5. Compare two processing levels from the same acquisition when both are available.
     try:
-        l1a = phiesta.open_product("6008", level="L1A")
+        l1a = phiesta.open_product("6008", level="L1A", download_missing=False)
         comparison = phiesta.compare_levels(
             l1a,
             l1c,

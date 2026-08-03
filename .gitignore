@@ -20,3 +20,6 @@ scripts/*mangrove*.py
 
 # Proprietary / local PhiSat-2 simulator executable
 third_party/phisat2_exec/
+
+# Credentials
+.env

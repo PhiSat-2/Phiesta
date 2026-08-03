@@ -253,6 +253,7 @@ def _warp_rectified_proxy_preview(
 def run_proxy_alignment(
     event: Any,
     triplet: Any,
+    snr_psf_method: str = None,
     proxy_target_size: tuple[int, int] = (1024, 1024),
     matching_max_side: int = 1800,
     features: Literal["superpoint", "sift"] = "superpoint",
@@ -287,7 +288,7 @@ def run_proxy_alignment(
     proxy_sim = simulate_phisat2_from_sentinel_crop(
         crop=triplet.sentinel_crop,
         output_dir=proxy_sim_dir,
-        phisat2_exec_path=None,
+        snr_psf_method=snr_psf_method,
         processing_level="L1C",
         workers=1,
         overwrite=overwrite,

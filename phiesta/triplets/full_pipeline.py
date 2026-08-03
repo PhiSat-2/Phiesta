@@ -55,7 +55,8 @@ def build_full_sentinel_triplet(
     window_days: int = 15,
     max_cloud_cover: float = 20.0,
     buffer_km: float = 20.0,
-    satellite: str = "S2B",
+    snr_psf_method: str = None,
+    satellite: str | list[str] | None = None,
     proxy_target_size: tuple[int, int] = (1024, 1024),
     matching_max_side: int = 1800,
     features: str = "superpoint",
@@ -110,6 +111,7 @@ def build_full_sentinel_triplet(
         print(f"[Phiesta] buffer_km={buffer_km}")
         print(f"[Phiesta] proxy_target_size={proxy_target_size}")
         print(f"[Phiesta] final_simulation_target_size={final_simulation_target_size}")
+   
 
     # 1. Big Sentinel crop
     triplet = event.build_sentinel_triplet(
@@ -119,11 +121,12 @@ def build_full_sentinel_triplet(
         window_days=window_days,
         max_cloud_cover=max_cloud_cover,
         buffer_km=buffer_km,
+        snr_psf_method=snr_psf_method,
         run_sentinel_source=True,
         run_sentinel_crop=True,
         run_simulation=False,
         overwrite_crop=overwrite_big_crop,
-            sentinel_backend=sentinel_backend,
+        sentinel_backend=sentinel_backend,
         sentinel_cache_dir=sentinel_cache_dir,
         cdse_username=cdse_username,
         cdse_password=cdse_password,
@@ -135,6 +138,7 @@ def build_full_sentinel_triplet(
     proxy = run_proxy_alignment(
         event=event,
         triplet=triplet,
+        snr_psf_method=snr_psf_method,
         proxy_target_size=proxy_target_size,
         matching_max_side=matching_max_side,
         features=features,
@@ -174,6 +178,7 @@ def build_full_sentinel_triplet(
     # 5. Final simulation
     final_sim = simulate_phisat2_from_sentinel_crop(
         crop=final_crop_obj,
+        snr_psf_method=snr_psf_method,
         output_dir=product_dir / "simulated_final_native",
         overwrite=overwrite_final_simulation,
         target_size=final_simulation_target_size,
@@ -219,6 +224,8 @@ def build_full_sentinel_triplet(
             "delta_days": triplet.sentinel_source.delta_days if triplet.sentinel_source else None,
             "cloud_cover": triplet.sentinel_source.cloud_cover if triplet.sentinel_source else None,
             "coverage": triplet.sentinel_source.coverage if triplet.sentinel_source else None,
+            "num_tiles": triplet.sentinel_source.metadata["num_tiles"] if triplet.sentinel_source else None,
+            "sentinel_products_name": [pair["l1c_name"] for pair in triplet.sentinel_source.metadata["pairs"]] if triplet.sentinel_source else None
         },
         "metrics": {
             "matches": proxy["matches"],

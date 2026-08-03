@@ -305,7 +305,7 @@ def create_sentinel_crop(
                 "source": source.to_dict() if hasattr(source, "to_dict") else {},
             },
         )
-
+ 
     if verbose:
         print(f"[Phiesta] Creating Sentinel-2B crop: {crop_path}")
 

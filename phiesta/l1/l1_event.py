@@ -172,11 +172,14 @@ class L1_event:
         sentinel_backend="download",
         sentinel_cache_dir="cache/sentinel2",
         buffer_km=20.0,
+        snr_psf_method: str = None,
         proxy_target_size=(1024, 1024),
         final_margin_pct=0.15,
         final_simulation_target_size=None,
         triplet_kwargs=None,
         strict_kwargs=None,
+        cdse_username: str | None = None,
+        cdse_password: str | None = None,
         verbose=True,
     ):
         """
@@ -200,9 +203,12 @@ class L1_event:
                 sentinel_backend=sentinel_backend,
                 sentinel_cache_dir=sentinel_cache_dir,
                 buffer_km=buffer_km,
+                snr_psf_method=snr_psf_method,
                 proxy_target_size=proxy_target_size,
                 final_margin_pct=final_margin_pct,
                 final_simulation_target_size=final_simulation_target_size,
+                cdse_username=cdse_username,
+                cdse_password=cdse_password,
                 verbose=verbose,
                 **triplet_kwargs,
             )

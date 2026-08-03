@@ -76,13 +76,14 @@ def build_sentinel_triplet(
     event: Any,
     product_id: str | None = None,
     output_dir: str | Path = "data/triplets",
-    satellite: str = "S2B",
+    satellite: str | list[str] | None = None,
     window_days: int = 15,
     max_cloud_cover: float = 20.0,
     buffer_km: float = 10.0,
     match_band: str = "PAN",
     transform_model: str = "homography",
     phisat2_exec_path: str | Path | None = None,
+    snr_psf_method: str = "alternative",
     save: bool = True,
     verbose: bool = True,
     run_sentinel_source: bool = True,
@@ -116,7 +117,10 @@ def build_sentinel_triplet(
     if save:
         paths.make_dirs()
 
-    exec_path = resolve_phisat2_executable(phisat2_exec_path)
+    if snr_psf_method == "executable":
+        exec_path = resolve_phisat2_executable(phisat2_exec_path)
+    else:
+        exec_path = None
 
     triplet = TripletResult(
         product_id=str(pid),
@@ -124,12 +128,16 @@ def build_sentinel_triplet(
         paths=paths,
         simulation=SimulationResult(
             simulated_path=None,
-            phisat2_exec_path=str(exec_path),
+            phisat2_exec_path=str(exec_path) if exec_path else None,
             processing_level="L1C",
-            backend="executable",
+            backend=snr_psf_method,
             band_order=[],
             metadata={
-                "simulator": "OrbitalAI PhiSat-2 executable",
+                "simulator": (
+                    "OrbitalAI PhiSat-2 executable"
+                    if snr_psf_method == "executable"
+                    else "OrbitalAI PhiSat-2 Python alternative backend"
+                ),
             },
         ),
         qc={
@@ -141,14 +149,21 @@ def build_sentinel_triplet(
             "buffer_km": float(buffer_km),
             "match_band": str(match_band),
             "transform_model": str(transform_model),
-            "phisat2_exec_path": str(exec_path),
+            "phisat2_exec_path": str(exec_path) if exec_path else None,
+            "snr_psf_method": snr_psf_method,
             "pipeline_stage": "init",
         },
     )
 
     if verbose:
         print(f"[Phiesta] Initialized triplet workspace: {paths.root_dir}")
-        print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
+        if exec_path:
+            print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
+        else:
+            print("[Phiesta] PhiSat-2 backend: Python alternative")
+
+    if satellite is None:
+        satellite = ["S2A", "S2B"]
 
     if run_sentinel_source:
         if verbose:
@@ -179,8 +194,11 @@ def build_sentinel_triplet(
                 "s2_coverage": source.coverage,
                 "l1c_paths": source.l1c_paths,
                 "l2a_paths": source.l2a_paths,
+                "selected_satellite": source.satellite
             }
         )
+
+        triplet.save_qc()
 
         if verbose:
             print(
@@ -194,7 +212,7 @@ def build_sentinel_triplet(
             raise ValueError("Cannot run Sentinel crop before Sentinel source selection.")
 
         if verbose:
-            print("[Phiesta] Building Sentinel-2B crop")
+            print("[Phiesta] Building Sentinel-2 crop")
 
         crop = create_sentinel_crop(
             event=event,
@@ -229,11 +247,12 @@ def build_sentinel_triplet(
 
         if verbose:
             print("[Phiesta] Running PhiSat-2 simulation")
-
+ 
         simulation = simulate_phisat2_from_sentinel_crop(
             crop=triplet.sentinel_crop,
             output_dir=paths.simulated_dir,
             phisat2_exec_path=exec_path,
+            snr_psf_method=snr_psf_method,
             processing_level="L1C",
             workers=simulation_workers,
             overwrite=overwrite_simulation,

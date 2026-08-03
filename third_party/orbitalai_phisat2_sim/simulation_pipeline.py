@@ -227,7 +227,7 @@ class SimulationPipeline:
             "Expected a 7-band Phiesta crop or an >=8-band Sentinel stack, "
             f"got shape {s2_data.shape}"
         )
-
+ 
     def simulate_single_file(
         self,
         s2_tiff_path: Path | str,

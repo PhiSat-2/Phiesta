@@ -76,11 +76,17 @@ def _clean_cdse_wkt(raw: Any) -> str | None:
 
 def _fetch_l1c_twin(
     session: requests.Session,
-    l2a_product: dict,
-    satellite: str = "S2B",
+    l2a_product: dict
 ) -> dict | None:
     exact_time = l2a_product["ContentDate"]["Start"]
     tile_id = l2a_product["Name"].split("_")[5]
+
+    name = l2a_product["Name"]
+
+    if "S2A_" in name:
+        satellite = "S2A"
+    elif "S2B_" in name:
+        satellite = "S2B"
 
     query = (
         "Collection/Name eq 'SENTINEL-2' "
@@ -169,7 +175,7 @@ def find_best_sentinel_source_for_bbox(
     max_lon: float,
     max_lat: float,
     target_datetime: str,
-    satellite: str = "S2B",
+    satellite: str | list[str] | None = None,
     buffer_km: float = 10.0,
     window_days: int = 15,
     max_cloud_cover: float = 20.0,
@@ -186,6 +192,9 @@ def find_best_sentinel_source_for_bbox(
     The temporal search window is symmetric around the PhiSat-2 acquisition date.
     """
     session = session or requests.Session()
+
+    if satellite is None:
+        satellite = ["S2A", "S2B"]
 
     min_lon_b, min_lat_b, max_lon_b, max_lat_b = _buffer_lonlat_bbox(
         min_lon=min_lon,
@@ -206,9 +215,11 @@ def find_best_sentinel_source_for_bbox(
         "%Y-%m-%dT%H:%M:%S.000Z"
     )
 
+    satellite_filter = " or ".join([f"contains(Name, '{s}_')" for s in satellite])
+
     query_l2a = (
         "Collection/Name eq 'SENTINEL-2' "
-        f"and contains(Name, '{satellite}_') "
+        f"and ({satellite_filter}) "
         f"and OData.CSC.Intersects(area=geography'SRID=4326;{area_wkt}') "
         f"and ContentDate/Start gt {start_str} "
         f"and ContentDate/Start lt {end_str} "
@@ -310,7 +321,7 @@ def find_best_sentinel_source_for_bbox(
 
     with ThreadPoolExecutor(max_workers=max(1, len(best["products"]))) as executor:
         futures = [
-            executor.submit(_fetch_l1c_twin, session, product, satellite)
+            executor.submit(_fetch_l1c_twin, session, product)
             for product in best["products"]
         ]
 
@@ -323,10 +334,23 @@ def find_best_sentinel_source_for_bbox(
         raise ValueError(
             f"Found {satellite} L2A products but no matching L1C twins."
         )
+    
+    selected_satellites = set()
+
+    for p in best["products"]:
+        if "S2A_" in p["Name"]:
+            selected_satellites.add("S2A")
+        elif "S2B_" in p["Name"]:
+            selected_satellites.add("S2B")
+
+    if len(selected_satellites) == 1:
+        selected_satellite = selected_satellites.pop()
+    else:
+        selected_satellite = "+".join(sorted(selected_satellites))
 
     return SentinelSource(
         product_id=str(product_id),
-        satellite=satellite,
+        satellite=selected_satellite,
         s2_datetime=best["products"][0]["ContentDate"]["Start"],
         delta_days=round(float(best["delta_days"]), 3),
         cloud_cover=round(float(best["cloud_cover"]), 3),
@@ -350,7 +374,7 @@ def find_best_sentinel_source(
     event: Any,
     *,
     product_id: str | None = None,
-    satellite: str = "S2B",
+    satellite: str | list[str] | None = None,
     buffer_km: float = 10.0,
     window_days: int = 15,
     max_cloud_cover: float = 20.0,

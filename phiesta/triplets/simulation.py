@@ -66,6 +66,7 @@ def simulate_phisat2_from_sentinel_crop(
     crop: SentinelCropResult,
     output_dir: str | Path,
     phisat2_exec_path: str | Path | None = None,
+    snr_psf_method: str = None,
     processing_level: str = "L1C",
     workers: int = 1,
     overwrite: bool = False,
@@ -125,8 +126,11 @@ def simulate_phisat2_from_sentinel_crop(
     if not metadata_path.exists():
         raise FileNotFoundError(f"Sentinel metadata not found: {metadata_path}")
 
-    exec_path = resolve_phisat2_executable(phisat2_exec_path)
-
+    if snr_psf_method == "executable":
+        exec_path = resolve_phisat2_executable(phisat2_exec_path)
+    else:
+        exec_path = None
+        
     if target_size is None:
         size_tag = "native"
     else:
@@ -140,9 +144,9 @@ def simulate_phisat2_from_sentinel_crop(
 
         return SimulationResult(
             simulated_path=str(expected_output),
-            phisat2_exec_path=str(exec_path),
+            phisat2_exec_path=str(exec_path) if exec_path else None,
             processing_level=processing_level,
-            backend="executable",
+            backend=snr_psf_method,
             band_order=list(SIMULATED_BAND_ORDER),
             metadata={
                 "status": "ALREADY_EXISTS",
@@ -157,7 +161,10 @@ def simulate_phisat2_from_sentinel_crop(
     if verbose:
         print(f"[Phiesta] Simulating PhiSat-2 from Sentinel crop: {crop_path}")
         print(f"[Phiesta] Simulation metadata: {expected_metadata}")
-        print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
+        if exec_path:
+            print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
+        else:
+            print("[Phiesta] PhiSat-2 backend: Python alternative")
 
     _ensure_orbitalai_vendor_importable()
 
@@ -180,8 +187,8 @@ def simulate_phisat2_from_sentinel_crop(
         steps=steps,
         s2_source_dir=str(crop_path.parent),
         output_dir=str(output_dir),
-        phisat2_exec_path=str(exec_path),
-        snr_psf_method="executable",
+        phisat2_exec_path=str(exec_path) if exec_path else None,
+        snr_psf_method=snr_psf_method,
         processing_level=str(processing_level),
     )
 
@@ -211,9 +218,9 @@ def simulate_phisat2_from_sentinel_crop(
 
     return SimulationResult(
         simulated_path=str(expected_output),
-        phisat2_exec_path=str(exec_path),
+        phisat2_exec_path=str(exec_path) if exec_path else None,
         processing_level=processing_level,
-        backend="executable",
+        backend=snr_psf_method,
         band_order=list(SIMULATED_BAND_ORDER),
         metadata={
             "status": "SUCCESS",

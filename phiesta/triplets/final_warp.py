@@ -174,7 +174,7 @@ def warp_final_triplet_to_real_grid(
     win = window_info["window_native"]
     x_min = float(win["x_min"])
     y_min = float(win["y_min"])
-
+ 
     real_corners = np.array(
         [
             [0.0, 0.0],

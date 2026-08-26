@@ -2,10 +2,10 @@
 
 ## Required before making the repository public
 
-- [ ] Confirm redistribution/modification authorization for `third_party/orbitalai_phisat2_sim/` or remove it from the public release.
+- [x] Remove vendored OrbitalAI helper source from the public release; keep it as an optional external integration.
 - [ ] Record the exact redistribution/license terms for `third_party/phisat2_exec/*.bin`.
 - [ ] Confirm the intended copyright holder(s) for Phiesta-authored code (individual contributor(s), ESA, or another arrangement).
-- [ ] Run the CI workflow successfully on Python 3.10, 3.11, and 3.12.
+- [x] Run the CI workflow successfully on Python 3.10, 3.11, and 3.12.
 - [ ] Test at least one local L0, one L1A, and one L1C product with `download_missing=False`.
 - [ ] Test one authenticated Insula download using a non-public credential environment.
 - [ ] Test one simulator workflow on each platform intended to be supported by the bundled executable assets.

@@ -4,13 +4,13 @@ Phiesta is licensed under the Apache License 2.0. That license applies to the Ph
 
 ## OrbitalAI ΦSat-2 simulator helpers
 
-- **Location in Phiesta:** `third_party/orbitalai_phisat2_sim/`
 - **Upstream:** `https://github.com/AI4EO/orbitalAI/tree/main/phisat-2`
-- **Purpose:** helper code derived from the public OrbitalAI / AI4EO ΦSat-2 simulator materials.
-- **Local status:** adapted/vendored for Phiesta integration.
-- **License status:** the upstream repository did not expose a root `LICENSE` file when checked on 2026-08-25. Public availability on GitHub alone does not establish an open-source redistribution license.
+- **Purpose:** optional ΦSat-2 image-simulation workflow.
+- **Distribution:** OrbitalAI helper source code is **not redistributed with Phiesta**.
+- **Integration:** `phiesta.triplets.simulation` can load a compatible external `orbitalai_phisat2_sim` package. If it is not already importable, set `PHIESTA_ORBITALAI_ROOT` to its external location.
+- **License:** any externally supplied OrbitalAI material remains subject to its own rights and terms and is not covered by Phiesta's Apache-2.0 license.
 
-**Release action:** before publishing these vendored files, retain written permission or another authoritative statement establishing that redistribution/modification is permitted. If that authorization is not available, remove this vendored directory from the public release and make the simulator an external dependency instead.
+The upstream repository was publicly accessible when reviewed for the v0.1.0 release, but Phiesta does not rely on public GitHub availability as authorization to redistribute that source code.
 
 ## Platform-specific ΦSat-2 simulator executables
 

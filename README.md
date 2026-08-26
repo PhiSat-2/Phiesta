@@ -1,6 +1,12 @@
 # Phiesta
 
-**Python tools for ΦSat-2 L1 loading, visualization, Sentinel-2 alignment, and strict georeferencing.**
+[![CI](https://github.com/PhiSat-2/Phiesta/actions/workflows/ci.yml/badge.svg)](https://github.com/PhiSat-2/Phiesta/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
+
+**Mission-aware Python toolkit for ΦSat-2 product access, inspection, validation, comparison, and georeferencing.**
+
+Phiesta provides a single Python interface across raw **L0**, processed **L1A/L1C**, mission metadata, radiometric/geometric diagnostics, and Sentinel-2-assisted georeferencing workflows.
 
 > **Documentation**
 >
@@ -14,11 +20,11 @@
 
 ## What Phiesta does
 
-Phiesta is a research-oriented Python toolkit for working with **ΦSat-2 L1 acquisitions**.
+Phiesta is a research-oriented Python toolkit for working with **ΦSat-2 products from raw L0 through processed L1A/L1C acquisitions**.
 
 It provides a simple API to:
 
-- load local ΦSat-2 L1 products;
+- open local ΦSat-2 L0, L1A, and L1C products;
 - download/load acquisitions from Insula;
 - inspect metadata, bands, raster shape, CRS, transforms, and local geolocation files;
 - visualize multispectral bands, RGB, false color, and display stretches;
@@ -36,7 +42,7 @@ It provides a simple API to:
 Clone the repository:
 
 ```bash
-git clone https://github.com/malodept/Phiesta.git
+git clone https://github.com/PhiSat-2/Phiesta.git
 cd Phiesta
 ```
 
@@ -56,7 +62,7 @@ python -m pip install git+https://github.com/cvg/LightGlue.git
 Quick import check:
 
 ```bash
-python -c "import phiesta; from phiesta import L1_event, connect_insula; print('Phiesta OK')"
+python -c "import phiesta; from phiesta import L0_event, L1_event, L1A_event, connect_insula; print('Phiesta OK')"
 python -c "from lightglue import LightGlue, SuperPoint, SIFT; print('LightGlue OK')"
 ```
 
@@ -317,6 +323,17 @@ examples/
 
 ---
 
+## ΦSat-2 ecosystem
+
+Phiesta is designed to complement the other public ΦSat-2 resources rather than replace them:
+
+- **Portal-Access** documents how to request and access ΦSat-2 data.
+- **Φ-down (`phidown`)** provides general search/download tooling, including ΦSat-2 support.
+- **Data-Spec** defines dataset formatting used by ΦSatNet-related workflows.
+- **Phiesta** focuses on mission-aware product loading, L0/L1 inspection, validation, cross-level comparison, diagnostics, and georeferencing.
+
+---
+
 ## References and credits
 
 Phiesta builds on public Earth-observation tools, data services, and research code:
@@ -327,7 +344,7 @@ Phiesta builds on public Earth-observation tools, data services, and research co
 - **Feature matching:** LightGlue for local feature matching.
 - **Land-cover context, when used:** ESA WorldCover 2021 v200.
 
-External services may require their own credentials and terms of use. Phiesta does not distribute proprietary platform-specific executables.
+External services and bundled third-party components may have their own terms. The Apache-2.0 license applies to Phiesta itself; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for components that are not covered by that license.
 
 ---
 
@@ -515,3 +532,12 @@ Summary:
 - `open_raw_l0_product(..., download_missing=True)`: raw L0 access/download without requiring the external converter.
 - `open_product(..., level="L0")`: builds a prepared `L0_event`; this requires the external converter when only raw L0 data is present.
 
+
+
+---
+
+## License
+
+Phiesta is released under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
+
+Third-party source code and executable components are **not automatically relicensed** under Apache-2.0. Their provenance and licensing status are documented in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

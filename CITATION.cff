@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: Phiesta
+message: "If you use Phiesta in research, please cite this software and the relevant ΦSat-2 mission/data publications."
+type: software
+authors:
+  - family-names: de Pastor
+    given-names: Malo
+version: 0.1.0
+date-released: 2026-08-25
+repository-code: "https://github.com/PhiSat-2/Phiesta"
+license: Apache-2.0
+keywords:
+  - PhiSat-2
+  - Earth observation
+  - remote sensing
+  - Level-0
+  - multispectral imagery

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -22,18 +24,60 @@ SIMULATED_BAND_ORDER = [
 
 
 
-def _ensure_orbitalai_vendor_importable() -> None:
+def _load_external_orbitalai_backend():
     """
-    Make the vendored OrbitalAI simulation package importable.
+    Load the optional OrbitalAI-compatible simulation helpers.
 
-    This is needed when running scripts from examples/, where Python's sys.path
-    may not include the repository root even if phiesta itself is installed in
-    editable mode.
+    Phiesta does not redistribute the OrbitalAI helper source code. A compatible
+    ``orbitalai_phisat2_sim`` package may instead be supplied externally.
+
+    Either make that package importable normally, or set
+    ``PHIESTA_ORBITALAI_ROOT`` to:
+
+    - the parent directory containing ``orbitalai_phisat2_sim/``; or
+    - the ``orbitalai_phisat2_sim/`` package directory itself.
     """
-    repo_root = Path(__file__).resolve().parents[2]
-    repo_root_str = str(repo_root)
-    if repo_root_str not in sys.path:
-        sys.path.insert(0, repo_root_str)
+    package_name = "orbitalai_phisat2_sim"
+
+    external_root = os.environ.get("PHIESTA_ORBITALAI_ROOT")
+    if external_root:
+        root = Path(external_root).expanduser().resolve()
+
+        if not root.exists():
+            raise FileNotFoundError(
+                f"PHIESTA_ORBITALAI_ROOT does not exist: {root}"
+            )
+
+        if root.name == package_name and (root / "__init__.py").exists():
+            search_root = root.parent
+        else:
+            search_root = root
+
+        search_root_str = str(search_root)
+        if search_root_str not in sys.path:
+            sys.path.insert(0, search_root_str)
+
+    try:
+        config_module = importlib.import_module(
+            f"{package_name}.simulation_config"
+        )
+        pipeline_module = importlib.import_module(
+            f"{package_name}.simulation_pipeline"
+        )
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "The optional OrbitalAI simulation helper backend is not "
+            "distributed with Phiesta. Supply a compatible external "
+            "'orbitalai_phisat2_sim' package, or set "
+            "PHIESTA_ORBITALAI_ROOT to its location. The platform-specific "
+            "PhiSat-2 executable alone is not sufficient for this workflow."
+        ) from exc
+
+    return (
+        config_module.SimulationConfig,
+        config_module.SimulationSteps,
+        pipeline_module.SimulationPipeline,
+    )
 
 
 def _ensure_simulation_metadata_alias(metadata_path: str | Path) -> Path:
@@ -76,7 +120,7 @@ def simulate_phisat2_from_sentinel_crop(
     """
     Simulate a PhiSat-2-like product from a Sentinel-2 crop.
 
-    This wraps the vendored OrbitalAI / PhiSat-2 simulation workflow.
+    This wraps an optional external OrbitalAI-compatible PhiSat-2 simulation workflow.
 
     Args:
         crop: Result returned by create_sentinel_crop(...).
@@ -159,13 +203,11 @@ def simulate_phisat2_from_sentinel_crop(
         print(f"[Phiesta] Simulation metadata: {expected_metadata}")
         print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
 
-    _ensure_orbitalai_vendor_importable()
-
-    from third_party.orbitalai_phisat2_sim.simulation_config import (
+    (
         SimulationConfig,
         SimulationSteps,
-    )
-    from third_party.orbitalai_phisat2_sim.simulation_pipeline import SimulationPipeline
+        SimulationPipeline,
+    ) = _load_external_orbitalai_backend()
 
     steps = SimulationSteps(
         radiance=True,

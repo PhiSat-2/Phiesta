@@ -283,13 +283,9 @@ For most users, `event.get_georef(...)` is the recommended high-level entry poin
 
 ## Local executables and simulator code
 
-The public Python simulator code used by Phiesta is included in:
+Phiesta does not redistribute the OrbitalAI Python simulator helpers. The optional Python simulation workflow can use a compatible external `orbitalai_phisat2_sim` package; set `PHIESTA_ORBITALAI_ROOT` when it is not otherwise importable.
 
-```text
-third_party/orbitalai_phisat2_sim/
-```
-
-The repository does **not** distribute local/platform-specific executable binaries. The folder:
+Authorized platform-specific simulator executables are versioned under:
 
 ```text
 third_party/phisat2_exec/
@@ -340,7 +336,7 @@ Phiesta builds on public Earth-observation tools, data services, and research co
 
 - **ΦSat-2 mission:** ESA ΦSat-2 mission material.
 - **Sentinel-2 access:** Copernicus Data Space Ecosystem catalogue and OData download API.
-- **OrbitalAI / ΦSat-2 simulator:** public OrbitalAI challenge materials and simulator code, vendored in `third_party/orbitalai_phisat2_sim/`.
+- **OrbitalAI / ΦSat-2 simulator:** optional external integration with the public OrbitalAI simulator materials; the helper source code is not redistributed by Phiesta.
 - **Feature matching:** LightGlue for local feature matching.
 - **Land-cover context, when used:** ESA WorldCover 2021 v200.
 

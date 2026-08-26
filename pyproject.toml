@@ -4,7 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phiesta"
-version = "0.0.1"
+version = "0.1.0"
+description = "Mission-aware Python toolkit for access, inspection, validation, comparison, and georeferencing of ΦSat-2 products."
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["phisat-2", "earth-observation", "remote-sensing", "satellite-imagery", "multispectral"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
@@ -42,3 +56,13 @@ triplets = [
 docs = [
     "sphinx",
 ]
+
+
+[project.urls]
+Homepage = "https://github.com/PhiSat-2/Phiesta"
+Repository = "https://github.com/PhiSat-2/Phiesta"
+Issues = "https://github.com/PhiSat-2/Phiesta/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

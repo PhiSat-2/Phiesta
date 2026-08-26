@@ -6,7 +6,7 @@ Clone the repository
 
 .. code-block:: bash
 
-   git clone https://github.com/malodept/Phiesta.git
+   git clone https://github.com/PhiSat-2/Phiesta.git
    cd Phiesta
 
 Base installation
@@ -31,7 +31,7 @@ Import checks
 
 .. code-block:: bash
 
-   python -c "import phiesta; from phiesta import L1_event, connect_insula; print('Phiesta OK')"
+   python -c "import phiesta; from phiesta import L0_event, L1_event, L1A_event, connect_insula; print('Phiesta OK')"
    python -c "from lightglue import LightGlue, SuperPoint, SIFT; print('LightGlue OK')"
 
 Credentials
@@ -45,6 +45,6 @@ Depending on the workflow, the user may need:
 Local executable binaries
 -------------------------
 
-Phiesta includes public simulator Python code in ``third_party/orbitalai_phisat2_sim/``.
+Phiesta can include platform-specific ΦSat-2 simulator executables under ``third_party/phisat2_exec/`` and vendors adapted OrbitalAI simulator helpers under ``third_party/orbitalai_phisat2_sim/``.
 
-The repository does not distribute local/platform-specific executable binaries. Authorized users can place such files locally in ``third_party/phisat2_exec/`` or pass paths explicitly where supported.
+These third-party components are not automatically covered by Phiesta's Apache-2.0 license. See ``THIRD_PARTY_NOTICES.md`` before redistribution or packaging.

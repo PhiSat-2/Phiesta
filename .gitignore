@@ -1,4 +1,4 @@
-﻿downloads/
+downloads/
 data/
 prepared_l0/
 docs/_build/
@@ -18,9 +18,19 @@ outputs/
 scripts/*mangrove*.py
 *.egg-info/
 
-# Proprietary / local PhiSat-2 simulator executable
-# Bundle public PhiSat-2 simulator executables.
-# Only ignore local temporary files in this folder.
+# ΦSat-2 simulator executables are intentionally versioned in the repository.
+# Ignore only local/generated files in this folder.
 third_party/phisat2_exec/*.tmp
 third_party/phisat2_exec/*.log
 reports/
+
+# Local credentials / environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+dist/
+build/

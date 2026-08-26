@@ -1,6 +1,15 @@
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("phiesta")
+except PackageNotFoundError:
+    __version__ = "0+unknown"
+
 from phiesta.remote.auth import connect_insula
 
-from phiesta.l0 import raw_l0_report, raw_l0_table
+from phiesta.l0 import L0_event, raw_l0_report, raw_l0_table
+from phiesta.l1 import L1_event
+from phiesta.l1a import L1A_event
 
 from phiesta.products import (
     open_product,
@@ -31,7 +40,11 @@ from phiesta.specs import (
 )
 
 __all__ = [
+    "__version__",
     "connect_insula",
+    "L0_event",
+    "L1_event",
+    "L1A_event",
     "raw_l0_report",
     "raw_l0_table",
     "open_product",

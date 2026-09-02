@@ -245,6 +245,7 @@ class L1_event:
         overwrite=True,
         verbose=True,
         georef_kwargs=None,
+        **get_georef_kwargs,
     ):
         """
         Export the real PhiSat-2 acquisition as a georeferenced GeoTIFF.
@@ -259,10 +260,17 @@ class L1_event:
         """
         if georef is None:
             kwargs = dict(georef_kwargs or {})
+            kwargs.update(get_georef_kwargs)
             if triplet is not None:
                 kwargs["triplet"] = triplet
             kwargs.setdefault("verbose", verbose)
             georef = self.get_georef(**kwargs)
+        elif get_georef_kwargs:
+            names = ", ".join(sorted(get_georef_kwargs))
+            raise ValueError(
+                "get_georef options cannot be used when georef is already supplied: "
+                f"{names}"
+            )
 
         from phiesta.triplets.geotiff_export import export_georeferenced_tif
 
@@ -275,6 +283,18 @@ class L1_event:
             overwrite=overwrite,
             verbose=verbose,
         )
+
+    def georeference(self, output_path=None, **kwargs):
+        """
+        Build and export a georeferenced PhiSat-2 product in one call.
+
+        This is the shortest high-level API for users who want a standard
+        georeferenced raster rather than the intermediate matching objects.
+        Keyword arguments are forwarded to :meth:`export_georeferenced_tif`;
+        georeferencing options such as ``window_days`` and
+        ``sentinel_backend`` are forwarded automatically to :meth:`get_georef`.
+        """
+        return self.export_georeferenced_tif(output_path=output_path, **kwargs)
 
 
     def refine_triplet_georeference_strict(

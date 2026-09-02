@@ -47,3 +47,21 @@ Local executable binaries
 Phiesta can include authorized platform-specific ΦSat-2 simulator executables under ``third_party/phisat2_exec/``. The triplet extra contains the Python orchestration required to call them, so no separate simulator-helper checkout or environment variable is required.
 
 These third-party components are not automatically covered by Phiesta's Apache-2.0 license. See ``THIRD_PARTY_NOTICES.md`` before redistribution or packaging.
+
+Minimal end-to-end georeferencing
+---------------------------------
+
+After installing the ``triplets`` extra, a downloaded Insula L1 product can be
+turned into a standard georeferenced GeoTIFF with one high-level call:
+
+.. code-block:: python
+
+   from phiesta import connect_insula
+
+   client = connect_insula()
+   event = client.load_l1("5359")
+   product = event.georeference()
+   print(product["path"])
+
+The Sentinel search horizon defaults to 60 days in each direction. Override it
+for a specific run when needed, for example ``event.georeference(window_days=10)``.

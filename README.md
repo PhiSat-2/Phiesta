@@ -69,47 +69,37 @@ See [`docs/installation.rst`](docs/installation.rst) for more details.
 
 ---
 
-## Minimal georeferencing example from an Insula product ID
+## Minimal georeferenced product from an Insula product ID
 
 ```python
-import json
-from pathlib import Path
-
 from phiesta import connect_insula
 
-PRODUCT_ID = "5359"  # replace with the acquisition number
+PRODUCT_ID = "5359"
 
 client = connect_insula()
 event = client.load_l1(PRODUCT_ID)
 
-georef = event.get_georef(
+product = event.georeference(
     sentinel_backend="download",
-    source="simulated",
-    window_days=10,          # optional override; default search horizon is ±60 days
-    max_cloud_cover=40.0,
+    # window_days=10,  # optional override; default search horizon is ±60 days
     verbose=True,
 )
 
-out = Path(f"georef_{PRODUCT_ID}.json")
-out.write_text(json.dumps(georef, indent=2), encoding="utf-8")
-
-print("quality:", georef["quality"])
-print("corners_lonlat:", georef["corners_lonlat"])
-print("center_lonlat:", georef["center_lonlat"])
-print("polygon_geojson:", georef["polygon_geojson"])
-print("metrics:", georef["metrics"])
-print("saved:", out)
+print(product["path"])
+print(product["crs"])
+print(product["resolution"])
 ```
 
-The returned `georef` dictionary contains:
+`event.georeference(...)` runs the Sentinel-assisted registration and writes a
+standard georeferenced GeoTIFF. The default Sentinel search horizon remains
+±60 days; pass `window_days=10` (or another value) when a stricter temporal
+constraint is wanted for a particular acquisition.
+
+For access to the intermediate homographies, geographic footprint and matching
+metrics without immediately exporting the final raster, use:
 
 ```python
-georef["quality"]          # alignment quality label
-georef["corners_lonlat"]   # acquisition footprint corners as lon/lat
-georef["center_lonlat"]    # acquisition center as lon/lat
-georef["polygon_geojson"]  # GeoJSON polygon
-georef["metrics"]          # matching/alignment metrics
-georef["paths"]            # report, preview, warped products, matches
+georef = event.get_georef(window_days=10)
 ```
 
 ---

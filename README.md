@@ -46,17 +46,13 @@ git clone https://github.com/PhiSat-2/Phiesta.git
 cd Phiesta
 ```
 
-Install the base package:
-
-```bash
-python -m pip install -e .
-```
-
-For Sentinel-2 triplets and strict georeferencing:
+For the complete Phiesta workflow, including Sentinel-assisted georeferencing:
 
 ```bash
 python -m pip install -e ".[triplets]"
 ```
+
+That single installation command includes the base package and the optional matching dependencies. If you only need local product inspection and no Sentinel-assisted georeferencing, `python -m pip install -e .` is sufficient.
 
 Quick import check:
 

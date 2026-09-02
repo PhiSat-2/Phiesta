@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 from .models import SentinelCropResult, SimulationResult
@@ -21,32 +20,6 @@ SIMULATED_BAND_ORDER = [
 
 
 
-
-
-def _ensure_simulation_metadata_alias(metadata_path: str | Path) -> Path:
-    """
-    Ensure compatibility with the vendored OrbitalAI simulation code.
-
-    Some older scripts expect:
-        <product_id>_S2B_metadata.json
-
-    Phiesta writes:
-        <product_id>_s2b_metadata.json
-
-    This helper creates the expected alias if needed.
-    """
-    metadata_path = Path(metadata_path)
-
-    with open(metadata_path, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-
-    product_id = str(meta.get("product_id", metadata_path.stem.split("_")[0]))
-    expected = metadata_path.parent / f"{product_id}_S2B_metadata.json"
-
-    if expected.resolve() != metadata_path.resolve():
-        shutil.copy2(metadata_path, expected)
-
-    return expected
 
 
 def simulate_phisat2_from_sentinel_crop(
@@ -141,11 +114,9 @@ def simulate_phisat2_from_sentinel_crop(
             },
         )
 
-    expected_metadata = _ensure_simulation_metadata_alias(metadata_path)
-
     if verbose:
         print(f"[Phiesta] Simulating PhiSat-2 from Sentinel crop: {crop_path}")
-        print(f"[Phiesta] Simulation metadata: {expected_metadata}")
+        print(f"[Phiesta] Simulation metadata: {metadata_path}")
         print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
 
     with open(metadata_path, "r", encoding="utf-8") as f:
@@ -181,7 +152,6 @@ def simulate_phisat2_from_sentinel_crop(
             "status": "SUCCESS",
             "source_crop": str(crop_path),
             "metadata_path": str(metadata_path),
-            "expected_metadata_alias": str(expected_metadata),
             "target_size": target_size,
             "workers_ignored": workers,
         },

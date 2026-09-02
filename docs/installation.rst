@@ -9,21 +9,19 @@ Clone the repository
    git clone https://github.com/PhiSat-2/Phiesta.git
    cd Phiesta
 
-Base installation
------------------
+Complete installation
+---------------------
 
-.. code-block:: bash
-
-   python -m pip install -e .
-
-Triplet / strict georeferencing installation
---------------------------------------------
-
-For Sentinel-2 triplets and LightGlue-based strict georeferencing:
+For the complete Phiesta workflow, including Sentinel-2 triplets and strict
+georeferencing, use one installation command:
 
 .. code-block:: bash
 
    python -m pip install -e ".[triplets]"
+
+This includes the base Phiesta package. Users who only need local product
+inspection can instead install the smaller base environment with
+``python -m pip install -e .``.
 
 Import checks
 -------------

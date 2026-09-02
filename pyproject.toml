@@ -43,15 +43,7 @@ third_party = ["phisat2_exec/README.md"]
 
 [project.optional-dependencies]
 triplets = [
-    "opencv-python",
     "torch",
-    "pyproj",
-    "scipy",
-    "scikit-image",
-    "geopandas",
-    "sentinelhub",
-    "eo-learn",
-    "sunpy",
     "scm-lightglue>=0.2.8",
 ]
 docs = [

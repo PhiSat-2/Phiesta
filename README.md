@@ -56,7 +56,6 @@ For Sentinel-2 triplets and strict georeferencing:
 
 ```bash
 python -m pip install -e ".[triplets]"
-python -m pip install git+https://github.com/cvg/LightGlue.git
 ```
 
 Quick import check:
@@ -86,7 +85,7 @@ event = client.load_l1(PRODUCT_ID)
 georef = event.get_georef(
     sentinel_backend="download",
     source="simulated",
-    window_days=60,          # search horizon, not a hard validity threshold
+    window_days=10,          # maximum temporal offset from the PhiSat-2 acquisition
     max_cloud_cover=40.0,
     verbose=True,
 )

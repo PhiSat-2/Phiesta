@@ -175,7 +175,7 @@ class L1_event:
         proxy_target_size=(1024, 1024),
         final_margin_pct=0.10,
         final_simulation_target_size=None,
-        window_days=60,
+        window_days=10,
         max_cloud_cover=40.0,
         min_coverage=0.85,
         source_w_time=0.05,

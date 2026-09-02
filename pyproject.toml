@@ -52,6 +52,7 @@ triplets = [
     "sentinelhub",
     "eo-learn",
     "sunpy",
+    "scm-lightglue>=0.2.8",
 ]
 docs = [
     "sphinx",

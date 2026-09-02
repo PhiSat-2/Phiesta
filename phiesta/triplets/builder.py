@@ -77,7 +77,7 @@ def build_sentinel_triplet(
     product_id: str | None = None,
     output_dir: str | Path = "data/triplets",
     satellite: str = "S2B",
-    window_days: int = 60,
+    window_days: int = 10,
     max_cloud_cover: float = 40.0,
     buffer_km: float = 10.0,
     match_band: str = "PAN",

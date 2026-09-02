@@ -24,7 +24,6 @@ For Sentinel-2 triplets and LightGlue-based strict georeferencing:
 .. code-block:: bash
 
    python -m pip install -e ".[triplets]"
-   python -m pip install git+https://github.com/cvg/LightGlue.git
 
 Import checks
 -------------

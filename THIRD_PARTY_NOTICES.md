@@ -12,6 +12,13 @@ Phiesta is licensed under the Apache License 2.0. That license applies to the Ph
 
 The upstream repository was publicly accessible when reviewed for the v0.1.0 release, but Phiesta does not rely on public GitHub availability as authorization to redistribute that source code.
 
+## LightGlue / SuperPoint
+
+- **Purpose:** local feature matching for proxy and strict georeferencing.
+- **Installation:** the `triplets` extra installs the PyPI package `scm-lightglue` so users do not need a second manual Git installation step. The package exposes the `lightglue` Python module used by Phiesta.
+- **Upstream:** LightGlue originates from `cvg/LightGlue`.
+- **Licensing:** LightGlue code and weights and the feature extractors it exposes retain their own upstream licenses. In particular, SuperPoint is not covered by Phiesta's Apache-2.0 license; users should review the upstream terms for their use case.
+
 ## Platform-specific ΦSat-2 simulator executables
 
 - **Location in Phiesta:** `third_party/phisat2_exec/`

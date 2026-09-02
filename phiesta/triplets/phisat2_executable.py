@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import platform
+import stat
 from pathlib import Path
 
 
@@ -52,5 +53,17 @@ def resolve_phisat2_executable(phisat2_exec_path: str | Path | None = None) -> P
 
     if not path.exists():
         raise FileNotFoundError(f"PhiSat-2 executable not found: {path}")
+
+    # Repository archives and some notebook environments may lose the POSIX
+    # executable bit. Make source-checkout installs work without requiring a
+    # separate user-facing ``chmod`` step.
+    if os.name != "nt" and not os.access(path, os.X_OK):
+        try:
+            path.chmod(path.stat().st_mode | stat.S_IXUSR)
+        except OSError as exc:
+            raise PermissionError(
+                "PhiSat-2 simulator exists but is not executable and Phiesta "
+                f"could not enable the executable bit: {path}"
+            ) from exc
 
     return path

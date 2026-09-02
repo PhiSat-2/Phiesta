@@ -106,17 +106,22 @@ def find_cdse_product_by_name(
 
 
 def _find_extracted_safe_dir(extract_dir: Path, product_name: str) -> Path | None:
+    def is_complete_l1c_safe(path: Path) -> bool:
+        # A failed ZIP extraction can leave the SAFE directory behind. Do not
+        # treat that partial directory as reusable on the next run.
+        return path.is_dir() and (path / "MTD_MSIL1C.xml").is_file()
+
     direct = extract_dir / product_name
-    if direct.exists() and direct.is_dir():
+    if is_complete_l1c_safe(direct):
         return direct
 
-    safe_dirs = list(extract_dir.glob("*.SAFE"))
-    if safe_dirs:
-        return safe_dirs[0]
-
-    nested = list(extract_dir.rglob("*.SAFE"))
-    if nested:
-        return nested[0]
+    # Backward compatibility with caches created by older Phiesta versions,
+    # which extracted each archive inside an additional product-stem directory.
+    # Search for the exact requested SAFE rather than returning an arbitrary one
+    # when several Sentinel products share the same cache.
+    for candidate in extract_dir.rglob(product_name):
+        if is_complete_l1c_safe(candidate):
+            return candidate
 
     return None
 
@@ -141,7 +146,13 @@ def download_cdse_product_zip(
 
     product_stem = product_name[:-5] if product_name.endswith(".SAFE") else product_name
     zip_path = products_dir / f"{product_stem}.zip"
-    extract_dir = products_dir / product_stem
+
+    # Sentinel ZIPs already contain a top-level ``<product>.SAFE`` directory.
+    # Extracting into ``products/<product-stem>/`` duplicated the very long
+    # product name in every path and can exceed Windows MAX_PATH. Extract
+    # directly into ``products/`` instead; different products remain isolated
+    # by their unique SAFE directory names.
+    extract_dir = products_dir
 
     existing_safe = _find_extracted_safe_dir(extract_dir, product_name)
     if existing_safe is not None and not overwrite:

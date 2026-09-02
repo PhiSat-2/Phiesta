@@ -44,6 +44,6 @@ Depending on the workflow, the user may need:
 Local executable binaries
 -------------------------
 
-Phiesta can include authorized platform-specific ΦSat-2 simulator executables under ``third_party/phisat2_exec/``. OrbitalAI helper source code is not redistributed. For the optional Python simulation workflow, provide a compatible external ``orbitalai_phisat2_sim`` package and, if necessary, set ``PHIESTA_ORBITALAI_ROOT`` to its location.
+Phiesta can include authorized platform-specific ΦSat-2 simulator executables under ``third_party/phisat2_exec/``. The triplet extra contains the Python orchestration required to call them, so no separate simulator-helper checkout or environment variable is required.
 
 These third-party components are not automatically covered by Phiesta's Apache-2.0 license. See ``THIRD_PARTY_NOTICES.md`` before redistribution or packaging.

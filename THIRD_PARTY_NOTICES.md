@@ -6,11 +6,9 @@ Phiesta is licensed under the Apache License 2.0. That license applies to the Ph
 
 - **Upstream:** `https://github.com/AI4EO/orbitalAI/tree/main/phisat-2`
 - **Purpose:** optional ΦSat-2 image-simulation workflow.
-- **Distribution:** OrbitalAI helper source code is **not redistributed with Phiesta**.
-- **Integration:** `phiesta.triplets.simulation` can load a compatible external `orbitalai_phisat2_sim` package. If it is not already importable, set `PHIESTA_ORBITALAI_ROOT` to its external location.
-- **License:** any externally supplied OrbitalAI material remains subject to its own rights and terms and is not covered by Phiesta's Apache-2.0 license.
-
-The upstream repository was publicly accessible when reviewed for the v0.1.0 release, but Phiesta does not rely on public GitHub availability as authorization to redistribute that source code.
+- **Upstream role:** the public OrbitalAI ΦSat-2 materials are retained here as provenance for the simulation workflow.
+- **Distribution:** Phiesta does not vendor the former `orbitalai_phisat2_sim` helper package. The current triplet pipeline uses Phiesta-maintained orchestration code and the separately governed platform-specific simulator executable described below.
+- **License:** upstream OrbitalAI materials and simulator executables retain their own rights and terms and are not relicensed by Phiesta's Apache-2.0 license.
 
 ## LightGlue / SuperPoint
 

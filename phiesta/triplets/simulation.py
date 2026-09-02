@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import importlib
 import json
-import os
 import shutil
-import sys
 from pathlib import Path
 
 from .models import SentinelCropResult, SimulationResult
@@ -24,60 +21,6 @@ SIMULATED_BAND_ORDER = [
 
 
 
-def _load_external_orbitalai_backend():
-    """
-    Load the optional OrbitalAI-compatible simulation helpers.
-
-    Phiesta does not redistribute the OrbitalAI helper source code. A compatible
-    ``orbitalai_phisat2_sim`` package may instead be supplied externally.
-
-    Either make that package importable normally, or set
-    ``PHIESTA_ORBITALAI_ROOT`` to:
-
-    - the parent directory containing ``orbitalai_phisat2_sim/``; or
-    - the ``orbitalai_phisat2_sim/`` package directory itself.
-    """
-    package_name = "orbitalai_phisat2_sim"
-
-    external_root = os.environ.get("PHIESTA_ORBITALAI_ROOT")
-    if external_root:
-        root = Path(external_root).expanduser().resolve()
-
-        if not root.exists():
-            raise FileNotFoundError(
-                f"PHIESTA_ORBITALAI_ROOT does not exist: {root}"
-            )
-
-        if root.name == package_name and (root / "__init__.py").exists():
-            search_root = root.parent
-        else:
-            search_root = root
-
-        search_root_str = str(search_root)
-        if search_root_str not in sys.path:
-            sys.path.insert(0, search_root_str)
-
-    try:
-        config_module = importlib.import_module(
-            f"{package_name}.simulation_config"
-        )
-        pipeline_module = importlib.import_module(
-            f"{package_name}.simulation_pipeline"
-        )
-    except ModuleNotFoundError as exc:
-        raise RuntimeError(
-            "The optional OrbitalAI simulation helper backend is not "
-            "distributed with Phiesta. Supply a compatible external "
-            "'orbitalai_phisat2_sim' package, or set "
-            "PHIESTA_ORBITALAI_ROOT to its location. The platform-specific "
-            "PhiSat-2 executable alone is not sufficient for this workflow."
-        ) from exc
-
-    return (
-        config_module.SimulationConfig,
-        config_module.SimulationSteps,
-        pipeline_module.SimulationPipeline,
-    )
 
 
 def _ensure_simulation_metadata_alias(metadata_path: str | Path) -> Path:
@@ -120,7 +63,9 @@ def simulate_phisat2_from_sentinel_crop(
     """
     Simulate a PhiSat-2-like product from a Sentinel-2 crop.
 
-    This wraps an optional external OrbitalAI-compatible PhiSat-2 simulation workflow.
+    This uses Phiesta's self-contained simulation wrapper together with the
+    platform-specific PhiSat-2 executable. No separate OrbitalAI Python helper
+    package is required.
 
     Args:
         crop: Result returned by create_sentinel_crop(...).
@@ -203,45 +148,20 @@ def simulate_phisat2_from_sentinel_crop(
         print(f"[Phiesta] Simulation metadata: {expected_metadata}")
         print(f"[Phiesta] PhiSat-2 executable: {exec_path}")
 
-    (
-        SimulationConfig,
-        SimulationSteps,
-        SimulationPipeline,
-    ) = _load_external_orbitalai_backend()
-
-    steps = SimulationSteps(
-        radiance=True,
-        add_panchromatic=True,
-        band_misalignment=True,
-        snr_simulation=True,
-        psf_filtering=True,
-        reflectance_conversion=True,
-    )
-
-    config = SimulationConfig(
-        steps=steps,
-        s2_source_dir=str(crop_path.parent),
-        output_dir=str(output_dir),
-        phisat2_exec_path=str(exec_path),
-        snr_psf_method="executable",
-        processing_level=str(processing_level),
-    )
-
     with open(metadata_path, "r", encoding="utf-8") as f:
         metadata = json.load(f)
 
     metadata["target_size"] = target_size
 
-    pipeline = SimulationPipeline(config=config)
+    from .native_simulation import simulate_single_file_native
 
-    ok = pipeline.simulate_single_file(
+    simulate_single_file_native(
         s2_tiff_path=crop_path,
         output_tiff_path=expected_output,
         metadata=metadata,
+        phisat2_exec_path=exec_path,
+        processing_level=str(processing_level),
     )
-
-    if not ok:
-        raise RuntimeError("PhiSat-2 simulation failed.")
 
     if not expected_output.exists():
         raise FileNotFoundError(

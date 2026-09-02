@@ -85,7 +85,7 @@ event = client.load_l1(PRODUCT_ID)
 georef = event.get_georef(
     sentinel_backend="download",
     source="simulated",
-    window_days=10,          # maximum temporal offset from the PhiSat-2 acquisition
+    window_days=10,          # optional override; default search horizon is ±60 days
     max_cloud_cover=40.0,
     verbose=True,
 )
@@ -282,7 +282,7 @@ For most users, `event.get_georef(...)` is the recommended high-level entry poin
 
 ## Local executables and simulator code
 
-Phiesta does not redistribute the OrbitalAI Python simulator helpers. The optional Python simulation workflow can use a compatible external `orbitalai_phisat2_sim` package; set `PHIESTA_ORBITALAI_ROOT` when it is not otherwise importable.
+Phiesta's triplet workflow includes the Python orchestration needed to run the ΦSat-2 simulation step directly with the platform-specific simulator executable. No separate simulator-helper checkout or environment variable is required.
 
 Authorized platform-specific simulator executables are versioned under:
 
@@ -335,7 +335,7 @@ Phiesta builds on public Earth-observation tools, data services, and research co
 
 - **ΦSat-2 mission:** ESA ΦSat-2 mission material.
 - **Sentinel-2 access:** Copernicus Data Space Ecosystem catalogue and OData download API.
-- **OrbitalAI / ΦSat-2 simulator:** optional external integration with the public OrbitalAI simulator materials; the helper source code is not redistributed by Phiesta.
+- **ΦSat-2 simulator:** Phiesta includes the Python orchestration used by the triplet workflow and calls the authorized platform-specific simulator executable; see `THIRD_PARTY_NOTICES.md` for provenance and redistribution terms.
 - **Feature matching:** LightGlue for local feature matching.
 - **Land-cover context, when used:** ESA WorldCover 2021 v200.
 

@@ -53,7 +53,7 @@ def build_full_sentinel_triplet(
     event: Any,
     product_id: str | int | None = None,
     output_root: str | Path = "data/triplets",
-    window_days: int = 10,
+    window_days: int = 60,
     max_cloud_cover: float = 40.0,
     min_coverage: float = 0.85,
     source_w_time: float = 0.05,

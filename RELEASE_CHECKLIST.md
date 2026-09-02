@@ -2,7 +2,7 @@
 
 ## Required before making the repository public
 
-- [x] Remove vendored OrbitalAI helper source from the public release; keep it as an optional external integration.
+- [x] Remove the former vendored OrbitalAI helper package from the public release; keep provenance in third-party notices.
 - [ ] Record the exact redistribution/license terms for `third_party/phisat2_exec/*.bin`.
 - [ ] Confirm the intended copyright holder(s) for Phiesta-authored code (individual contributor(s), ESA, or another arrangement).
 - [x] Run the CI workflow successfully on Python 3.10, 3.11, and 3.12.

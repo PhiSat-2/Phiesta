@@ -26,6 +26,7 @@ from .rectification import rectify_simulated_catalog_crop
 
 from .final_warp import warp_final_triplet_to_real_grid
 __all__ = [
+    "export_georeferenced_tif",
     "build_full_sentinel_triplets_batch",
     "build_georeferenced_triplets_batch",
     "valid_fraction",
@@ -64,3 +65,5 @@ from .visualization import show_full_triplet, inspect_full_triplet, valid_fracti
 from .batch import build_full_sentinel_triplets_batch, build_georeferenced_triplets_batch
 from .strict_georef import refine_triplet_georeference_strict
 
+
+from .geotiff_export import export_georeferenced_tif

@@ -233,6 +233,50 @@ class L1_event:
         )
 
 
+    def export_georeferenced_tif(
+        self,
+        georef=None,
+        output_path=None,
+        *,
+        triplet=None,
+        resolution=None,
+        resampling="bilinear",
+        compress="deflate",
+        overwrite=True,
+        verbose=True,
+        georef_kwargs=None,
+    ):
+        """
+        Export the real PhiSat-2 acquisition as a georeferenced GeoTIFF.
+
+        If ``georef`` is omitted, Phiesta first runs :meth:`get_georef` using
+        the supplied ``triplet`` (when available). The projective correction is
+        resampled onto a regular map grid because it cannot, in general, be
+        represented exactly by replacing the original affine GeoTransform.
+
+        Returns a dictionary containing the output path, CRS, transform,
+        dimensions and effective resolution.
+        """
+        if georef is None:
+            kwargs = dict(georef_kwargs or {})
+            if triplet is not None:
+                kwargs["triplet"] = triplet
+            kwargs.setdefault("verbose", verbose)
+            georef = self.get_georef(**kwargs)
+
+        from phiesta.triplets.geotiff_export import export_georeferenced_tif
+
+        return export_georeferenced_tif(
+            georef,
+            output_path=output_path,
+            resolution=resolution,
+            resampling=resampling,
+            compress=compress,
+            overwrite=overwrite,
+            verbose=verbose,
+        )
+
+
     def refine_triplet_georeference_strict(
         self,
         triplet,

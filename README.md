@@ -58,7 +58,7 @@ Quick import check:
 
 ```bash
 python -c "import phiesta; from phiesta import L0_event, L1_event, L1A_event, connect_insula; print('Phiesta OK')"
-python -c "from lightglue import LightGlue, SuperPoint, SIFT; print('LightGlue OK')"
+python -c "from scm_lightglue import LightGlue, SIFT; print('LightGlue OK')"
 ```
 
 See [`docs/installation.rst`](docs/installation.rst) for more details.
@@ -91,6 +91,7 @@ standard georeferenced GeoTIFF. The default Sentinel search horizon remains
 ±60 days; pass `window_days=10` (or another value) when a stricter temporal
 constraint is wanted for a particular acquisition.
 Simulation perturbations are deterministic by default (`simulation_seed=0`) so repeated georeferencing runs are reproducible. Pass `simulation_seed=None` only when non-deterministic perturbations are explicitly desired.
+SIFT + LightGlue is the portable matching default installed by the `triplets` extra. The original SuperPoint backend remains available with `features="superpoint"` when the original `cvg/LightGlue` package is installed separately.
 
 For access to the intermediate homographies, geographic footprint and matching
 metrics without immediately exporting the final raster, use:

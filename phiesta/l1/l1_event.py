@@ -305,7 +305,7 @@ class L1_event:
         source="simulated",
         real_match_band="PAN",
         source_match_band="PAN",
-        features="superpoint",
+        features="sift",
         max_keypoints=12000,
         matching_max_side=2600,
         ransac_thresh=3.0,

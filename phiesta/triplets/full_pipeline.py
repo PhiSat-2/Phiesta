@@ -63,7 +63,7 @@ def build_full_sentinel_triplet(
     satellite: str = "S2B",
     proxy_target_size: tuple[int, int] = (1024, 1024),
     matching_max_side: int = 1800,
-    features: str = "superpoint",
+    features: str = "sift",
     max_keypoints: int = 8000,
     final_margin_pct: float = 0.10,
     sentinel_backend: str = "auto",

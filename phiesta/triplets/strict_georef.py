@@ -306,7 +306,7 @@ def _estimate_strict_homography(
     source_mask: np.ndarray | None = None,
     real_mask: np.ndarray | None = None,
     *,
-    features: Literal["superpoint", "sift"] = "superpoint",
+    features: Literal["superpoint", "sift"] = "sift",
     max_keypoints: int = 12000,
     matching_max_side: int = 2600,
     ransac_thresh: float = 3.0,
@@ -343,13 +343,11 @@ def _estimate_strict_homography(
 
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    extractor, matcher = _load_extractor_and_matcher(
+    extractor, matcher, rbd = _load_extractor_and_matcher(
         features=features,
         max_keypoints=max_keypoints,
         device=device,
     )
-
-    from lightglue.utils import rbd
 
     source_tensor = _to_lightglue_tensor(source_small, device=device, features=features)
     real_tensor = _to_lightglue_tensor(real_small, device=device, features=features)
@@ -609,7 +607,7 @@ def refine_triplet_georeference_strict(
     source: Literal["simulated", "sentinel"] = "simulated",
     real_match_band: str = "PAN",
     source_match_band: str = "PAN",
-    features: Literal["superpoint", "sift"] = "superpoint",
+    features: Literal["superpoint", "sift"] = "sift",
     max_keypoints: int = 12000,
     matching_max_side: int = 2600,
     ransac_thresh: float = 3.0,
@@ -969,12 +967,15 @@ def georef_from_strict_result(
         real_w = real_src.width
         real_h = real_src.height
 
+    # Homographies are estimated in OpenCV pixel-centre coordinates. Use the
+    # outer edges of the real raster for the geographic footprint; the
+    # half-pixel conversion to raster/GDAL corner coordinates is applied below.
     real_corners = np.array(
         [
-            [0.0, 0.0],
-            [real_w - 1.0, 0.0],
-            [real_w - 1.0, real_h - 1.0],
-            [0.0, real_h - 1.0],
+            [-0.5, -0.5],
+            [real_w - 0.5, -0.5],
+            [real_w - 0.5, real_h - 0.5],
+            [-0.5, real_h - 0.5],
         ],
         dtype=np.float64,
     )
@@ -1000,12 +1001,17 @@ def georef_from_strict_result(
         transform = s2_src.transform
         crs = s2_src.crs
 
-        map_x, map_y = transform * (s2_corners[:, 0], s2_corners[:, 1])
-        center_x, center_y = transform * (s2_center[:, 0], s2_center[:, 1])
+        # ``transform`` maps raster pixel-corner coordinates, while the
+        # homography coordinates are pixel centres. Add 0.5 explicitly.
+        map_x, map_y = transform * (s2_corners[:, 0] + 0.5, s2_corners[:, 1] + 0.5)
+        center_x, center_y = transform * (s2_center[:, 0] + 0.5, s2_center[:, 1] + 0.5)
 
         transformer = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
         lon, lat = transformer.transform(map_x, map_y)
-        center_lon, center_lat = transformer.transform(center_x, center_y)
+        center_lon, center_lat = transformer.transform(
+            float(center_x[0]),
+            float(center_y[0]),
+        )
 
     corners_lonlat = [[float(x), float(y)] for x, y in zip(lon, lat)]
     polygon_lonlat = corners_lonlat + [corners_lonlat[0]]
@@ -1025,8 +1031,8 @@ def georef_from_strict_result(
         "quality": inspection["quality"],
         "corners_lonlat": corners_lonlat,
         "corners_latlon": [[lat, lon] for lon, lat in corners_lonlat],
-        "center_lonlat": [float(center_lon[0]), float(center_lat[0])],
-        "center_latlon": [float(center_lat[0]), float(center_lon[0])],
+        "center_lonlat": [float(center_lon), float(center_lat)],
+        "center_latlon": [float(center_lat), float(center_lon)],
         "polygon_geojson": {
             "type": "Polygon",
             "coordinates": [polygon_lonlat],

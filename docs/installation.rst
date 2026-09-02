@@ -29,7 +29,11 @@ Import checks
 .. code-block:: bash
 
    python -c "import phiesta; from phiesta import L0_event, L1_event, L1A_event, connect_insula; print('Phiesta OK')"
-   python -c "from lightglue import LightGlue, SuperPoint, SIFT; print('LightGlue OK')"
+   python -c "from scm_lightglue import LightGlue, SIFT; print('LightGlue OK')"
+
+SIFT + LightGlue is the portable matching default installed by the ``triplets`` extra.
+The original SuperPoint backend can still be requested with ``features="superpoint"``
+when the original ``cvg/LightGlue`` package is installed separately.
 
 Credentials
 -----------

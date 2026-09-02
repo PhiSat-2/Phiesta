@@ -81,17 +81,25 @@ def _solar_irradiances_with_pan(metadata: dict[str, Any]) -> np.ndarray:
 
 def _to_radiance(reflectance_hwc: np.ndarray, sun_zenith_hw: np.ndarray, metadata: dict[str, Any]) -> np.ndarray:
     irradiance = _s2_solar_irradiances(metadata)
-    earth_sun_dist = float(metadata.get("earth_sun_dist", 1.0))
+    # Prefer the explicit Sentinel-2 reflectance-conversion factor U. The
+    # legacy ``earth_sun_dist`` key is kept only for backward compatibility.
+    sun_earth_u = float(
+        metadata.get("reflectance_conversion_U", metadata.get("earth_sun_dist", 1.0))
+    )
     factor = np.cos(np.deg2rad(sun_zenith_hw)).astype(np.float32)
-    factor *= earth_sun_dist / np.pi
+    factor *= sun_earth_u / np.pi
     return reflectance_hwc * factor[..., None] * irradiance[None, None, :]
 
 
 def _to_reflectance(radiance_hwc: np.ndarray, sun_zenith_hw: np.ndarray, metadata: dict[str, Any]) -> np.ndarray:
     irradiance = _solar_irradiances_with_pan(metadata)
-    earth_sun_dist = float(metadata.get("earth_sun_dist", 1.0))
+    # Prefer the explicit Sentinel-2 reflectance-conversion factor U. The
+    # legacy ``earth_sun_dist`` key is kept only for backward compatibility.
+    sun_earth_u = float(
+        metadata.get("reflectance_conversion_U", metadata.get("earth_sun_dist", 1.0))
+    )
     factor = np.cos(np.deg2rad(sun_zenith_hw)).astype(np.float32)
-    factor *= earth_sun_dist / np.pi
+    factor *= sun_earth_u / np.pi
     denom = factor[..., None] * irradiance[None, None, :]
     return np.divide(
         radiance_hwc,

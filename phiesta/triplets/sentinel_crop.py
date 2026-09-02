@@ -51,6 +51,57 @@ def _earth_sun_distance_au(date_obj: datetime) -> float:
     return float(1.0 - 0.01672 * math.cos(math.radians(0.9856 * (day_of_year - 4))))
 
 
+def _earth_sun_correction_u(date_obj: datetime) -> float:
+    """Approximate Sentinel-2 U correction factor (inverse squared distance)."""
+    distance_au = _earth_sun_distance_au(date_obj)
+    return float(1.0 / (distance_au * distance_au))
+
+
+def _xml_local_name(tag: str) -> str:
+    return str(tag).rsplit("}", 1)[-1]
+
+
+def _first_xml_element(root, local_name: str):
+    for elem in root.iter():
+        if _xml_local_name(elem.tag) == local_name:
+            return elem
+    return None
+
+
+def _xml_band_id(elem) -> int | None:
+    value = elem.get("bandId")
+    if value is None:
+        value = elem.get("band_id")
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _dn_to_toa_reflectance(
+    values: np.ndarray,
+    *,
+    band: str,
+    quantification_value: float,
+    radiometric_offsets: dict[str, float],
+) -> np.ndarray:
+    """Convert Sentinel-2 L1C digital numbers to TOA reflectance."""
+    quantification_value = float(quantification_value)
+    if not np.isfinite(quantification_value) or quantification_value <= 0:
+        raise ValueError(
+            f"Invalid Sentinel-2 QUANTIFICATION_VALUE={quantification_value!r}."
+        )
+
+    arr = np.asarray(values, dtype=np.float32)
+    valid = np.isfinite(arr) & (arr != 0)
+    offset = float(radiometric_offsets.get(band, 0.0))
+    out = np.zeros_like(arr, dtype=np.float32)
+    out[valid] = (arr[valid] + offset) / quantification_value
+    return out
+
+
 def _buffer_lonlat_bounds_from_event(event: Any, buffer_km: float) -> tuple[float, float, float, float]:
     corners = get_catalog_corners(event, order="lonlat")
     if not corners:
@@ -118,56 +169,95 @@ def _find_l1c_band_paths(l1c_paths: list[str]) -> dict[str, list[str]]:
 
 
 def _extract_simulator_metadata(l1c_path: str | Path, target_datetime: str | None) -> dict:
-    """
-    Extract the metadata required by the PhiSat-2 simulation pipeline.
+    """Extract radiometric and solar metadata required by the simulator.
 
-    Expected keys:
-    - earth_sun_dist
-    - solar_irradiances
-    - sun_zenith_angles
+    ``earth_sun_dist`` intentionally keeps the legacy key name used by the
+    simulation code, but its value is Sentinel-2's ``U`` correction factor,
+    i.e. the factor used directly in the official reflectance-to-radiance
+    conversion formula.
     """
     meta = {
         "earth_sun_dist": 1.0,
+        "reflectance_conversion_U": 1.0,
+        "quantification_value": 10000.0,
+        "radiometric_offsets": {},
         "solar_irradiances": {},
         "sun_zenith_angles": None,
+        "crop_value_domain": "toa_reflectance",
+        "radiometry_version": 1,
     }
 
     if target_datetime is not None:
         try:
-            dt = datetime.fromisoformat(str(target_datetime).replace("Z", "+00:00")).replace(tzinfo=None)
-            meta["earth_sun_dist"] = _earth_sun_distance_au(dt)
+            dt = datetime.fromisoformat(
+                str(target_datetime).replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+            u = _earth_sun_correction_u(dt)
+            meta["earth_sun_dist"] = u
+            meta["reflectance_conversion_U"] = u
         except Exception:
             pass
 
     safe_dir = Path(l1c_path)
-
     xml_main = safe_dir / "MTD_MSIL1C.xml"
     if xml_main.exists():
-        try:
-            root = ET.parse(xml_main).getroot()
-            irradiance_list = root.find(".//Solar_Irradiance_List")
-            if irradiance_list is not None:
-                for elem in irradiance_list.findall("SOLAR_IRRADIANCE"):
-                    band_id = int(elem.get("bandId", -1))
-                    if band_id in XML_BAND_ID_TO_NAME:
-                        meta["solar_irradiances"][XML_BAND_ID_TO_NAME[band_id]] = float(elem.text)
-        except Exception:
-            pass
+        root = ET.parse(xml_main).getroot()
+
+        quant_elem = _first_xml_element(root, "QUANTIFICATION_VALUE")
+        if quant_elem is not None and quant_elem.text:
+            meta["quantification_value"] = float(quant_elem.text)
+
+        u_elem = _first_xml_element(root, "U")
+        if u_elem is not None and u_elem.text:
+            u = float(u_elem.text)
+            meta["earth_sun_dist"] = u
+            meta["reflectance_conversion_U"] = u
+
+        for elem in root.iter():
+            local_name = _xml_local_name(elem.tag)
+            if local_name == "SOLAR_IRRADIANCE" and elem.text:
+                band_id = _xml_band_id(elem)
+                if band_id in XML_BAND_ID_TO_NAME:
+                    meta["solar_irradiances"][XML_BAND_ID_TO_NAME[band_id]] = float(
+                        elem.text
+                    )
+            elif local_name == "RADIO_ADD_OFFSET" and elem.text:
+                band_id = _xml_band_id(elem)
+                if band_id in XML_BAND_ID_TO_NAME:
+                    meta["radiometric_offsets"][XML_BAND_ID_TO_NAME[band_id]] = float(
+                        elem.text
+                    )
 
     try:
         granule = _find_first_granule_dir(safe_dir, prefix="L1C_T")
         xml_tile = granule / "MTD_TL.xml"
         if xml_tile.exists():
             root = ET.parse(xml_tile).getroot()
-            zenith_grid = root.find(".//Sun_Angles_Grid/Zenith/Values_List")
-            if zenith_grid is not None:
-                rows = []
-                for val_elem in zenith_grid.findall("VALUES"):
-                    if val_elem.text:
-                        rows.append([float(v) for v in val_elem.text.strip().split()])
-                if rows:
-                    meta["sun_zenith_angles"] = rows
-    except Exception:
+            sun_grid = _first_xml_element(root, "Sun_Angles_Grid")
+            if sun_grid is not None:
+                zenith = next(
+                    (e for e in sun_grid if _xml_local_name(e.tag) == "Zenith"),
+                    None,
+                )
+                if zenith is not None:
+                    values_list = next(
+                        (
+                            e
+                            for e in zenith
+                            if _xml_local_name(e.tag) == "Values_List"
+                        ),
+                        None,
+                    )
+                    if values_list is not None:
+                        rows = []
+                        for elem in values_list:
+                            if _xml_local_name(elem.tag) == "VALUES" and elem.text:
+                                rows.append(
+                                    [float(v) for v in elem.text.strip().split()]
+                                )
+                        if rows:
+                            meta["sun_zenith_angles"] = rows
+    except FileNotFoundError:
         pass
 
     return meta
@@ -293,18 +383,33 @@ def create_sentinel_crop(
     metadata_path = output_dir / f"{product_id}_s2b_metadata.json"
 
     if crop_path.exists() and metadata_path.exists() and not overwrite:
-        return SentinelCropResult(
-            crop_path=str(crop_path),
-            metadata_path=str(metadata_path),
-            cloud_mask_path=None,
-            buffer_km=float(buffer_km),
-            resolution_m=10.0,
-            bands=list(S2_BANDS_SIM),
-            metadata={
-                "status": "ALREADY_EXISTS",
-                "source": source.to_dict() if hasattr(source, "to_dict") else {},
-            },
-        )
+        try:
+            existing_meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing_meta = {}
+
+        if (
+            existing_meta.get("crop_value_domain") == "toa_reflectance"
+            and int(existing_meta.get("radiometry_version", 0)) >= 1
+        ):
+            return SentinelCropResult(
+                crop_path=str(crop_path),
+                metadata_path=str(metadata_path),
+                cloud_mask_path=None,
+                buffer_km=float(buffer_km),
+                resolution_m=10.0,
+                bands=list(S2_BANDS_SIM),
+                metadata={
+                    "status": "ALREADY_EXISTS",
+                    "source": source.to_dict() if hasattr(source, "to_dict") else {},
+                },
+            )
+
+        if verbose:
+            print(
+                "[Phiesta] Rebuilding legacy Sentinel crop so L1C digital "
+                "numbers are converted to TOA reflectance."
+            )
 
     if verbose:
         print(f"[Phiesta] Creating Sentinel-2B crop: {crop_path}")
@@ -327,6 +432,10 @@ def create_sentinel_crop(
     )
 
     band_map = _find_l1c_band_paths(local_l1c_paths)
+    metadata = _extract_simulator_metadata(
+        l1c_path=local_l1c_paths[0],
+        target_datetime=source.s2_datetime,
+    )
 
     final_channels = []
     master_crs = None
@@ -344,6 +453,12 @@ def create_sentinel_crop(
                 master_crs=master_crs,
                 master_transform=master_transform,
                 master_shape=master_shape,
+            )
+            arr = _dn_to_toa_reflectance(
+                arr,
+                band=band,
+                quantification_value=metadata["quantification_value"],
+                radiometric_offsets=metadata["radiometric_offsets"],
             )
             final_channels.append(arr)
 
@@ -364,11 +479,11 @@ def create_sentinel_crop(
     with rasterio.open(crop_path, "w", **profile) as dst:
         dst.write(stack)
         dst.descriptions = tuple(S2_BANDS_NAMES)
+        dst.update_tags(
+            PHIESTA_SENTINEL_VALUE_DOMAIN="toa_reflectance",
+            PHIESTA_SENTINEL_RADIOMETRY_VERSION="1",
+        )
 
-    metadata = _extract_simulator_metadata(
-        l1c_path=local_l1c_paths[0],
-        target_datetime=source.s2_datetime,
-    )
     metadata.update(
         {
             "product_id": product_id,

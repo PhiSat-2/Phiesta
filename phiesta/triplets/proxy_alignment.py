@@ -65,24 +65,57 @@ def _load_extractor_and_matcher(
     max_keypoints: int,
     device: str,
 ):
-    from lightglue import LightGlue, SuperPoint, SIFT
+    """Load a LightGlue extractor/matcher pair and the matching ``rbd`` helper.
 
-    if features == "superpoint":
-        extractor = SuperPoint(max_num_keypoints=max_keypoints).eval().to(device)
-        matcher = LightGlue(features="superpoint").eval().to(device)
-    elif features == "sift":
+    The ``triplets`` extra installs ``scm-lightglue``, whose import namespace is
+    ``scm_lightglue`` and whose self-contained extractor set includes SIFT but
+    not SuperPoint. SIFT is therefore Phiesta's portable default. Users who
+    explicitly request SuperPoint can still use the original ``cvg/LightGlue``
+    package when it is installed separately.
+    """
+    features = str(features).lower()
+
+    if features == "sift":
+        try:
+            from scm_lightglue import LightGlue, SIFT
+            from scm_lightglue.utils import rbd
+        except ImportError:
+            try:
+                from lightglue import LightGlue, SIFT
+                from lightglue.utils import rbd
+            except ImportError as exc:
+                raise ImportError(
+                    "LightGlue matching is unavailable. Install Phiesta with "
+                    "`python -m pip install -e \".[triplets]\"`."
+                ) from exc
+
         extractor = SIFT(max_num_keypoints=max_keypoints).eval().to(device)
         matcher = LightGlue(features="sift").eval().to(device)
-    else:
-        raise ValueError(f"Unsupported LightGlue features: {features!r}")
+        return extractor, matcher, rbd
 
-    return extractor, matcher
+    if features == "superpoint":
+        try:
+            from lightglue import LightGlue, SuperPoint
+            from lightglue.utils import rbd
+        except ImportError as exc:
+            raise ImportError(
+                "features='superpoint' requires the original cvg/LightGlue "
+                "package, which is not part of Phiesta's portable triplets "
+                "extra. Use features='sift' (the default) or install the "
+                "original LightGlue package separately."
+            ) from exc
+
+        extractor = SuperPoint(max_num_keypoints=max_keypoints).eval().to(device)
+        matcher = LightGlue(features="superpoint").eval().to(device)
+        return extractor, matcher, rbd
+
+    raise ValueError(f"Unsupported LightGlue features: {features!r}")
 
 
 def _estimate_lightglue_homography(
     real_img: np.ndarray,
     sim_img: np.ndarray,
-    features: Literal["superpoint", "sift"] = "superpoint",
+    features: Literal["superpoint", "sift"] = "sift",
     max_keypoints: int = 8000,
     matching_max_side: int = 1800,
     ransac_thresh: float = 5.0,
@@ -104,13 +137,11 @@ def _estimate_lightglue_homography(
 
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    extractor, matcher = _load_extractor_and_matcher(
+    extractor, matcher, rbd = _load_extractor_and_matcher(
         features=features,
         max_keypoints=max_keypoints,
         device=device,
     )
-
-    from lightglue.utils import rbd
 
     real_tensor = _to_lightglue_tensor(real_small, device=device, features=features)
     sim_tensor = _to_lightglue_tensor(sim_small, device=device, features=features)
@@ -255,7 +286,7 @@ def run_proxy_alignment(
     triplet: Any,
     proxy_target_size: tuple[int, int] = (1024, 1024),
     matching_max_side: int = 1800,
-    features: Literal["superpoint", "sift"] = "superpoint",
+    features: Literal["superpoint", "sift"] = "sift",
     max_keypoints: int = 8000,
     real_band: str = "PAN",
     simulated_band_index: int = 4,

@@ -32,6 +32,7 @@ def simulate_phisat2_from_sentinel_crop(
     verbose: bool = True,
     target_size: tuple[int, int] | None = None,
     allow_large_native: bool = False,
+    random_seed: int | None = 0,
 ) -> SimulationResult:
     """
     Simulate a PhiSat-2-like product from a Sentinel-2 crop.
@@ -51,6 +52,9 @@ def simulate_phisat2_from_sentinel_crop(
         verbose: Print progress messages.
         target_size: Optional debug resize `(height, width)` before simulation.
             Keep `None` for native crop size.
+        random_seed: Seed for stochastic sensor perturbations. The default ``0``
+            makes proxy and final simulations reproducible. Pass ``None`` for a
+            non-deterministic simulation.
 
     Returns:
         SimulationResult with the simulated GeoTIFF path and metadata.
@@ -111,6 +115,7 @@ def simulate_phisat2_from_sentinel_crop(
                 "source_crop": str(crop_path),
                 "metadata_path": str(metadata_path),
                 "workers_ignored": workers,
+                "random_seed": random_seed,
             },
         )
 
@@ -132,6 +137,7 @@ def simulate_phisat2_from_sentinel_crop(
         metadata=metadata,
         phisat2_exec_path=exec_path,
         processing_level=str(processing_level),
+        random_seed=random_seed,
     )
 
     if not expected_output.exists():
@@ -154,5 +160,6 @@ def simulate_phisat2_from_sentinel_crop(
             "metadata_path": str(metadata_path),
             "target_size": target_size,
             "workers_ignored": workers,
+            "random_seed": random_seed,
         },
     )

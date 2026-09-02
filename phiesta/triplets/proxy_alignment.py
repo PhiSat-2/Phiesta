@@ -263,6 +263,7 @@ def run_proxy_alignment(
     overwrite: bool = True,
     save_aligned_preview: bool = True,
     verbose: bool = True,
+    simulation_seed: int | None = 0,
 ) -> dict[str, Any]:
     """
     Run low-resolution proxy simulation + catalog rectification + LightGlue alignment.
@@ -293,6 +294,7 @@ def run_proxy_alignment(
         overwrite=overwrite,
         target_size=proxy_target_size,
         verbose=verbose,
+        random_seed=simulation_seed,
     )
 
     if verbose:

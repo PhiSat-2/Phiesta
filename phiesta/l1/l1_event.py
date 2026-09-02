@@ -181,6 +181,7 @@ class L1_event:
         source_w_time=0.05,
         source_w_cloud=1.0,
         max_candidates_to_verify=20,
+        simulation_seed=0,
         triplet_kwargs=None,
         strict_kwargs=None,
         verbose=True,
@@ -219,6 +220,7 @@ class L1_event:
                 source_w_time=source_w_time,
                 source_w_cloud=source_w_cloud,
                 max_candidates_to_verify=max_candidates_to_verify,
+                simulation_seed=simulation_seed,
                 verbose=verbose,
                 **triplet_kwargs,
             )

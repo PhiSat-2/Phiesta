@@ -127,19 +127,20 @@ def _apply_band_misalignment(
     stack_hwc: np.ndarray,
     *,
     processing_level: str,
+    rng: np.random.Generator,
     std_pixels: float = 1.0,
 ) -> np.ndarray:
     """Apply the small stochastic inter-band shifts used by the legacy simulator workflow."""
     if processing_level.upper() == "L1A":
         relative = np.asarray([0.0, 1.105, 1.046, 0.943, 0.837, 0.717, 0.55, 0.44])
-        amplitude = np.random.normal(0.0, 0.4, size=8) + relative
-        angle = np.random.uniform(0.0, 2.0 * np.pi, size=8)
+        amplitude = rng.normal(0.0, 0.4, size=8) + relative
+        angle = rng.uniform(0.0, 2.0 * np.pi, size=8)
         shifts = np.column_stack((amplitude * np.cos(angle), amplitude * np.sin(angle)))
         shifts[0] = 0.0
         shifts = np.flip(np.cumsum(shifts, axis=0), axis=0)
     else:
-        amplitude = np.random.normal(0.0, float(std_pixels), size=8)
-        angle = np.random.uniform(0.0, 2.0 * np.pi, size=8)
+        amplitude = rng.normal(0.0, float(std_pixels), size=8)
+        angle = rng.uniform(0.0, 2.0 * np.pi, size=8)
         shifts = np.column_stack((amplitude * np.cos(angle), amplitude * np.sin(angle)))
         shifts[2] = 0.0
 
@@ -187,8 +188,14 @@ def simulate_single_file_native(
     metadata: dict[str, Any],
     phisat2_exec_path: str | Path,
     processing_level: str = "L1C",
+    random_seed: int | None = 0,
 ) -> None:
-    """Simulate a PhiSat-2-like raster without requiring OrbitalAI Python helper code."""
+    """Simulate a PhiSat-2-like raster without requiring OrbitalAI Python helper code.
+
+    The stochastic inter-band perturbation is deterministic by default so proxy
+    and final simulations use the same sensor perturbation. Pass
+    ``random_seed=None`` for non-deterministic sampling.
+    """
     s2_tiff_path = Path(s2_tiff_path)
     output_tiff_path = Path(output_tiff_path)
     output_tiff_path.parent.mkdir(parents=True, exist_ok=True)
@@ -218,9 +225,11 @@ def simulate_single_file_native(
     radiance = _to_radiance(reflectance, sun_zenith, metadata)
     radiance = _add_pan(radiance)
     radiance, sun_zenith = _resample_to_phisat(radiance, sun_zenith)
+    rng = np.random.default_rng(random_seed)
     radiance = _apply_band_misalignment(
         radiance,
         processing_level=processing_level,
+        rng=rng,
         std_pixels=1.0,
     )
 
@@ -260,4 +269,7 @@ def simulate_single_file_native(
         dst.update_tags(
             PHIESTA_SIMULATION_BACKEND="native",
             PHIESTA_SIMULATION_PROCESSING_LEVEL=str(processing_level),
+            PHIESTA_SIMULATION_RANDOM_SEED=(
+                "none" if random_seed is None else str(int(random_seed))
+            ),
         )

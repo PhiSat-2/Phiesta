@@ -102,6 +102,7 @@ def build_sentinel_triplet(
     overwrite_simulation: bool = False,
     simulation_workers: int = 1,
     simulation_target_size: tuple[int, int] | None = (1024, 1024),
+    simulation_seed: int | None = 0,
 ) -> TripletResult:
     """
     Initialize a Sentinel-2 / simulated PhiSat-2 / real PhiSat-2 triplet build.
@@ -250,6 +251,7 @@ def build_sentinel_triplet(
             overwrite=overwrite_simulation,
             target_size=simulation_target_size,
             verbose=verbose,
+            random_seed=simulation_seed,
         )
 
         triplet.simulation = simulation
@@ -263,6 +265,7 @@ def build_sentinel_triplet(
                 "simulation_processing_level": simulation.processing_level,
                 "simulation_band_order": simulation.band_order,
                 "simulation_target_size": simulation_target_size,
+                "simulation_seed": simulation_seed,
             }
         )
 

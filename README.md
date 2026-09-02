@@ -90,6 +90,7 @@ print(product["resolution"])
 standard georeferenced GeoTIFF. The default Sentinel search horizon remains
 ±60 days; pass `window_days=10` (or another value) when a stricter temporal
 constraint is wanted for a particular acquisition.
+Simulation perturbations are deterministic by default (`simulation_seed=0`) so repeated georeferencing runs are reproducible. Pass `simulation_seed=None` only when non-deterministic perturbations are explicitly desired.
 
 For access to the intermediate homographies, geographic footprint and matching
 metrics without immediately exporting the final raster, use:

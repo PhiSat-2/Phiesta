@@ -80,6 +80,7 @@ def build_full_sentinel_triplet(
     overwrite_final_simulation: bool = True,
     overwrite_final_warp: bool = True,
     verbose: bool = True,
+    simulation_seed: int | None = 0,
 ) -> dict[str, Any]:
     """
     Build a full pixel-aligned triplet:
@@ -151,6 +152,7 @@ def build_full_sentinel_triplet(
         overwrite=overwrite_proxy,
         save_aligned_preview=True,
         verbose=verbose,
+        simulation_seed=simulation_seed,
     )
 
     # 3. Estimate final Sentinel native window
@@ -188,6 +190,7 @@ def build_full_sentinel_triplet(
         target_size=final_simulation_target_size,
         allow_large_native=allow_large_native,
         verbose=verbose,
+        random_seed=simulation_seed,
     )
 
     # 6. Final warp to real PhiSat-2 grid
@@ -218,6 +221,7 @@ def build_full_sentinel_triplet(
             "source_w_time": source_w_time,
             "source_w_cloud": source_w_cloud,
             "max_candidates_to_verify": max_candidates_to_verify,
+            "simulation_seed": simulation_seed,
             "buffer_km": buffer_km,
             "satellite": satellite,
             "proxy_target_size": proxy_target_size,

@@ -290,13 +290,50 @@ class L1_event:
         """
         Build and export a georeferenced PhiSat-2 product in one call.
 
-        This is the shortest high-level API for users who want a standard
-        georeferenced raster rather than the intermediate matching objects.
-        Keyword arguments are forwarded to :meth:`export_georeferenced_tif`;
-        georeferencing options such as ``window_days`` and
-        ``sentinel_backend`` are forwarded automatically to :meth:`get_georef`.
+        Returns a new L1_event backed by the corrected georeferenced raster, so
+        the usual event API (show_rgb, show_band, get_band, to_cube, etc.)
+        continues to work on the georeferenced product.
         """
-        return self.export_georeferenced_tif(output_path=output_path, **kwargs)
+        export_result = self.export_georeferenced_tif(
+            output_path=output_path,
+            **kwargs,
+        )
+
+        import rasterio
+
+        out_path = Path(export_result["path"]).expanduser()
+
+        with rasterio.open(out_path) as src:
+            arr = src.read()
+
+            meta = dict(self._meta)
+            meta.update({
+                "path": str(out_path),
+                "raster_path": str(out_path),
+                "source_product_folder": self._product_folder,
+                "georeferenced": True,
+                "crs": src.crs,
+                "transform": src.transform,
+                "bounds": tuple(src.bounds),
+                "width": int(src.width),
+                "height": int(src.height),
+                "count": int(src.count),
+                "dtype": str(src.dtypes[0]),
+                "nodata": src.nodata,
+                "band_descriptions": tuple(src.descriptions),
+                "resolution": export_result.get("resolution"),
+                "resampling": export_result.get("resampling"),
+                "georeference_export": dict(export_result),
+            })
+
+        return type(self)(
+            arr=arr,
+            meta=meta,
+            product_folder=str(out_path.parent),
+            scene_id=self._scene_id,
+            product_kind=self._product_kind,
+            device=self._device,
+        )
 
 
     def refine_triplet_georeference_strict(

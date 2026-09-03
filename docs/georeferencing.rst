@@ -1,106 +1,62 @@
 Georeferencing guide
-===================
+====================
 
-High-level workflow
--------------------
-
-The recommended entry point is:
+Recommended workflow
+--------------------
 
 .. code-block:: python
 
-   georef = event.get_georef(
-       sentinel_backend="download",
-       source="simulated",
-       verbose=True,
-   )
+   product = event.georeference()
 
-This function builds the required Sentinel-2 context, performs alignment, and returns a Python dictionary with the refined georeference.
-
-From an Insula acquisition ID
------------------------------
+Phiesta searches for suitable Sentinel-2 context, performs the required
+simulation and alignment, exports the corrected PhiSat-2 raster as a standard
+GeoTIFF, and returns it as a new ``L1_event``.
 
 .. code-block:: python
 
-   import json
-   from pathlib import Path
+   product.show_rgb()
+   product.show_band("NIR")
+   red = product.get_band("RED")
+   print(product.meta["path"])
+   print(product.meta["crs"])
+   print(product.meta["transform"])
+
+From an Insula acquisition
+--------------------------
+
+.. code-block:: python
 
    from phiesta import connect_insula
-
-   PRODUCT_ID = "5359"
-
    client = connect_insula()
-   event = client.load_l1(PRODUCT_ID)
+   event = client.load_l1("5359")
+   product = event.georeference()
+   product.show_rgb()
 
-   georef = event.get_georef(
-       sentinel_backend="download",
-       source="simulated",
-       verbose=True,
-   )
-
-   out = Path(f"georef_{PRODUCT_ID}.json")
-   out.write_text(json.dumps(georef, indent=2), encoding="utf-8")
-
-   print("quality:", georef["quality"])
-   print("corners_lonlat:", georef["corners_lonlat"])
-   print("center_lonlat:", georef["center_lonlat"])
-   print("polygon_geojson:", georef["polygon_geojson"])
-   print("metrics:", georef["metrics"])
-   print("saved:", out)
-
-From a local L1 product
------------------------
-
-.. code-block:: python
-
-   import json
-   from pathlib import Path
-
-   from phiesta import L1_event
-
-   PRODUCT_PATH = r"/path/to/PHISAT-2_L1_..."
-   PRODUCT_ID = "local_product"
-
-   event = L1_event.from_path(PRODUCT_PATH)
-
-   georef = event.get_georef(
-       sentinel_backend="download",
-       source="simulated",
-       verbose=True,
-   )
-
-   out = Path(f"georef_{PRODUCT_ID}.json")
-   out.write_text(json.dumps(georef, indent=2), encoding="utf-8")
-
-
-Source search strategy
+Temporal search window
 ----------------------
 
-The Sentinel-2 temporal window is a configurable search horizon. It is not a
-hard georeferencing validity criterion. A closer Sentinel-2 acquisition is
-usually preferable, but the final georeference should be judged from alignment
-quality: matches, inliers, inlier ratio, residual errors, coverage and visual
-inspection. Larger temporal gaps can still be useful for georeferencing stable
-scene structures.
-
-Output structure
-----------------
-
-The returned dictionary contains:
+The default Sentinel-2 search horizon is +/-60 days.
 
 .. code-block:: python
 
-   georef["quality"]
-   georef["corners_lonlat"]
-   georef["center_lonlat"]
-   georef["polygon_geojson"]
-   georef["metrics"]
-   georef["paths"]
+   product = event.georeference(window_days=7)
 
-Typical paths include strict reports, overlay previews, warped Sentinel products, simulated products, match tables and inlier tables.
+Final simulation size
+---------------------
 
-Notes
------
+The high-level workflow uses a 2048 x 2048 final simulation by default.
+Native-size simulation can be requested with:
 
-``sentinel_backend="download"`` uses CDSE to retrieve Sentinel-2 products. It may ask for CDSE credentials.
+.. code-block:: python
 
-``source="simulated"`` means that the strict georeference is refined through the simulated ΦSat-2 representation of Sentinel-2.
+   product = event.georeference(final_simulation_target_size=None)
+
+Advanced geometric output
+-------------------------
+
+.. code-block:: python
+
+   georef = event.get_georef()
+
+Use ``get_georef()`` for intermediate homographies, footprints, matching
+metrics, strict reports, overlays, matches and inliers.

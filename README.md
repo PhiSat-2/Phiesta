@@ -33,7 +33,7 @@ It provides a simple API to:
 - search for suitable Sentinel-2 reference acquisitions within a configurable temporal horizon;
 - build Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets;
 - refine georeferencing with LightGlue-based alignment;
-- return a directly usable georeference object with corners, center, GeoJSON polygon, quality metrics, and output paths.
+- export corrected georeferenced PhiSat-2 GeoTIFFs as directly usable `L1_event` objects.
 
 ---
 
@@ -70,34 +70,46 @@ See [`docs/installation.rst`](docs/installation.rst) for more details.
 ```python
 from phiesta import connect_insula
 
-PRODUCT_ID = "5359"
-
 client = connect_insula()
-event = client.load_l1(PRODUCT_ID)
+event = client.load_l1("5359")
 
-product = event.georeference(
-    sentinel_backend="download",
-    # window_days=10,  # optional override; default search horizon is ±60 days
-    verbose=True,
-)
+product = event.georeference()
+product.show_rgb()
 
-print(product["path"])
-print(product["crs"])
-print(product["resolution"])
+print(product.meta["path"])
+print(product.meta["crs"])
+print(product.meta["transform"])
 ```
 
-`event.georeference(...)` runs the Sentinel-assisted registration and writes a
-standard georeferenced GeoTIFF. The default Sentinel search horizon remains
-±60 days; pass `window_days=10` (or another value) when a stricter temporal
-constraint is wanted for a particular acquisition.
-Simulation perturbations are deterministic by default (`simulation_seed=0`) so repeated georeferencing runs are reproducible. Pass `simulation_seed=None` only when non-deterministic perturbations are explicitly desired.
-SIFT + LightGlue is the portable matching default installed by the `triplets` extra. The original SuperPoint backend remains available with `features="superpoint"` when the original `cvg/LightGlue` package is installed separately.
+`event.georeference()` runs the Sentinel-assisted registration, exports a
+standard georeferenced GeoTIFF, and returns a new `L1_event` backed by the
+corrected raster.
 
-For access to the intermediate homographies, geographic footprint and matching
-metrics without immediately exporting the final raster, use:
+The usual product API therefore continues to work directly:
 
 ```python
-georef = event.get_georef(window_days=10)
+product.show_rgb()
+product.show_band("NIR")
+red = product.get_band("RED")
+cube = product.to_cube()
+```
+
+The default Sentinel-2 search horizon is +/-60 days. To restrict it, for
+example to +/-7 days:
+
+```python
+product = event.georeference(window_days=7)
+```
+
+The high-level workflow uses a 2048 x 2048 final simulation by default.
+Native-size final simulation can still be requested explicitly with
+`final_simulation_target_size=None`.
+
+For intermediate homographies, geographic footprint, matching metrics and
+strict-alignment diagnostics without exporting the final raster:
+
+```python
+georef = event.get_georef()
 ```
 
 ---
@@ -105,40 +117,12 @@ georef = event.get_georef(window_days=10)
 ## Minimal georeferencing example from a local L1 product
 
 ```python
-import json
-from pathlib import Path
-
 from phiesta import L1_event
 
-PRODUCT_PATH = r"/path/to/PHISAT-2_L1_..."
-PRODUCT_ID = "local_product"
-
-event = L1_event.from_path(PRODUCT_PATH)
-
-georef = event.get_georef(
-    sentinel_backend="download",
-    source="simulated",
-    verbose=True,
-)
-
-out = Path(f"georef_{PRODUCT_ID}.json")
-out.write_text(json.dumps(georef, indent=2), encoding="utf-8")
-
-print("quality:", georef["quality"])
-print("corners_lonlat:", georef["corners_lonlat"])
-print("center_lonlat:", georef["center_lonlat"])
-print("polygon_geojson:", georef["polygon_geojson"])
-print("metrics:", georef["metrics"])
-print("saved:", out)
-```
-
-`L1_event.from_path(...)` expects the root folder of a ΦSat-2 L1 product, typically containing:
-
-```text
-bands/
-geolocation/
-session_<id>_metadata.json
-processing_config.json
+event = L1_event.from_path("/path/to/PHISAT-2_L1_...")
+product = event.georeference()
+product.show_rgb()
+print(product.meta["path"])
 ```
 
 ---
@@ -264,7 +248,7 @@ strict = event.refine_triplet_georeference_strict(
 )
 ```
 
-For most users, `event.get_georef(...)` is the recommended high-level entry point.
+For most users, `event.georeference()` is the recommended high-level entry point. Use `event.get_georef(...)` for advanced access to the intermediate geometric solution.
 
 ---
 

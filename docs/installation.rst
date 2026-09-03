@@ -53,8 +53,7 @@ These third-party components are not automatically covered by Phiesta's Apache-2
 Minimal end-to-end georeferencing
 ---------------------------------
 
-After installing the ``triplets`` extra, a downloaded Insula L1 product can be
-turned into a standard georeferenced GeoTIFF with one high-level call:
+After installing the ``triplets`` extra:
 
 .. code-block:: python
 
@@ -62,8 +61,20 @@ turned into a standard georeferenced GeoTIFF with one high-level call:
 
    client = connect_insula()
    event = client.load_l1("5359")
-   product = event.georeference()
-   print(product["path"])
 
-The Sentinel search horizon defaults to 60 days in each direction. Override it
-for a specific run when needed, for example ``event.georeference(window_days=10)``.
+   product = event.georeference()
+   product.show_rgb()
+
+   print(product.meta["path"])
+   print(product.meta["crs"])
+   print(product.meta["transform"])
+
+``event.georeference()`` returns a new ``L1_event`` backed by the corrected
+georeferenced GeoTIFF.
+
+The Sentinel-2 search horizon defaults to 60 days in each direction. For
+example, restrict it to 7 days with ``event.georeference(window_days=7)``.
+
+The high-level workflow uses a 2048 x 2048 final simulation by default.
+Native-size simulation can be requested explicitly with
+``final_simulation_target_size=None``.

@@ -62,13 +62,29 @@ Patchify
 Georeferencing
 --------------
 
+Recommended high-level API:
+
 .. code-block:: python
 
-   georef = event.get_georef(
-       sentinel_backend="download",
-       source="simulated",
-       verbose=True,
-   )
+   product = event.georeference()
+   product.show_rgb()
+   product.show_band("NIR")
+   print(product.meta["path"])
+   print(product.meta["crs"])
+   print(product.meta["transform"])
+
+Restrict the Sentinel-2 temporal search:
+
+.. code-block:: python
+
+   product = event.georeference(window_days=7)
+
+Advanced geometry and matching diagnostics:
+
+.. code-block:: python
+
+   georef = event.get_georef()
+
 
 Manual triplet workflow
 -----------------------

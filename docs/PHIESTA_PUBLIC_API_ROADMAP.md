@@ -23,6 +23,18 @@
     phiesta.quality_table(events)
     phiesta.product_gallery(product_ids)
 
+### Georeferencing
+
+```python
+event = client.load_l1("5359")
+product = event.georeference()
+product.show_rgb()
+```
+
+`georeference()` is the primary high-level georeferencing API and returns a
+georeferenced `L1_event`. Use `event.get_georef()` for advanced access to the
+intermediate geometry.
+
 ## Near-term API priorities
 
 ### 1. Level comparison

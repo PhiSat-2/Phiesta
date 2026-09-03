@@ -31,7 +31,17 @@ Compare products from the same acquisition or different processing levels, such 
 
 ### Connect
 
-Link PhiSat-2 products to Sentinel-2 context, simulated PhiSat-2 proxies, alignment workflows, and georeferenced triplets.
+Link PhiSat-2 products to Sentinel-2 context, simulated PhiSat-2 proxies,
+alignment workflows, and corrected georeferenced products.
+
+The high-level API keeps the same product abstraction before and after
+georeferencing:
+
+```python
+event = client.load_l1("5359")
+product = event.georeference()
+product.show_rgb()
+```
 
 ## Public API direction
 

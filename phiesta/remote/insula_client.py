@@ -346,6 +346,40 @@ class InsulaClient:
         return search_result_to_dataframe(result)
 
 
+    def search_l1_worldcover(
+        self,
+        worldcover,
+        min_fraction=1e-6,
+        spatial_tolerance_km=30.0,
+        statistics_max_size=1024,
+        results_per_page=100,
+        max_catalog_products=None,
+        include_uncertain=True,
+        verbose=True,
+    ):
+        """
+        Find L1 acquisitions whose buffered catalog footprint contains an ESA
+        WorldCover class.
+
+        WorldCover raster processing is delegated to the public Microsoft
+        Planetary Computer APIs, so no WorldCover tiles are stored locally and
+        no Rasterio/GDAL remote-I/O backend is required.
+        """
+        from phiesta.remote.worldcover import search_l1_worldcover
+
+        return search_l1_worldcover(
+            self,
+            worldcover,
+            min_fraction=min_fraction,
+            spatial_tolerance_km=spatial_tolerance_km,
+            statistics_max_size=statistics_max_size,
+            results_per_page=results_per_page,
+            max_catalog_products=max_catalog_products,
+            include_uncertain=include_uncertain,
+            verbose=verbose,
+        )
+
+
     def search_l0_table(self, *args, **kwargs):
         """
         Search L0 products and return a compact pandas DataFrame.

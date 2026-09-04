@@ -227,6 +227,44 @@ patch_table = event.export_patches(
 
 ---
 
+## Build datasets by land-cover content
+
+Phiesta can prefilter the L1 catalog using ESA WorldCover before downloading or
+running expensive image georeferencing.
+
+```python
+candidates = client.search_l1_worldcover("mangrove")
+```
+
+The default is deliberately recall-oriented: the full catalog footprint is
+buffered by 30 km and ``min_fraction=1e-6``.
+
+Server-side WorldCover statistics use ``statistics_max_size=1024`` by default so catalog-wide searches stay practical. This stage is a candidate prefilter; exact spatial membership can be checked later on corrected georeferenced products.
+
+Transient WorldCover-service failures are conservatively retained as candidates with `worldcover_status="uncertain"` instead of aborting the scan or silently creating false negatives.
+
+```python
+candidates = client.search_l1_worldcover(
+    "built_up",
+    min_fraction=0.25,
+    spatial_tolerance_km=30,
+)
+```
+
+This stage uses only Insula catalog geometry and public Planetary Computer WorldCover statistics. It does not download PhiSat-2 acquisitions, store WorldCover tiles, or run georeferencing.
+
+The resulting table plugs into the existing loader:
+
+```python
+events = client.load_l1_table(candidates)
+```
+
+If exact spatial membership is required, georeference only these candidates
+and re-test the corrected footprints.
+
+
+---
+
 ## Build a Sentinel-2 triplet manually
 
 ```python

@@ -103,3 +103,33 @@ Manual triplet workflow
        source="simulated",
        verbose=True,
    )
+
+
+WorldCover dataset prefilter
+----------------------------
+
+Find L1 acquisitions whose catalog footprint, buffered by the default 30 km
+spatial tolerance, contains a requested ESA WorldCover class:
+
+.. code-block:: python
+
+   candidates = client.search_l1_worldcover("mangrove")
+
+The default ``min_fraction`` is ``1e-6``. Server-side WorldCover statistics use ``statistics_max_size=1024`` by default to keep catalog-wide filtering practical. The operation uses catalog geometry and public Planetary Computer WorldCover statistics; it does not download PhiSat-2 acquisitions, store WorldCover tiles, or run georeferencing.
+
+.. code-block:: python
+
+   events = client.load_l1_table(candidates)
+
+For literal one-pixel presence, use ``min_fraction=0.0``. Candidates still
+need at least one target-class pixel to be returned.
+
+
+WorldCover service failures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default search is recall-oriented. If the external WorldCover statistics
+service still fails for one acquisition after retries, that acquisition is
+retained in the returned candidate table and its ``worldcover_status`` is
+``"uncertain"``. This prevents transient service failures from becoming silent
+false negatives. Use ``include_uncertain=False`` for fail-fast behavior.

@@ -59,3 +59,10 @@ from .search_table import search_result_to_dataframe, search_result_to_records, 
 from .search_table import add_footprint_bbox_columns, filter_dataframe_by_bbox, search_bbox_table
 from .search_table import search_table_to_geojson, export_search_table_geojson, load_products_from_table
 
+
+from .worldcover import (
+    WORLDCOVER_CLASSES,
+    resolve_worldcover_class,
+    worldcover_stats_for_feature,
+    search_l1_worldcover,
+)

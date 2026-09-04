@@ -33,6 +33,8 @@ from phiesta.geometry import (
     interband_shift_table,
 )
 
+from phiesta.datasets import PhiestaDataset, build_dataset, open_dataset
+
 from phiesta.specs import (
     phisat2_band_table,
     phisat2_product_level_specs,
@@ -42,6 +44,9 @@ from phiesta.specs import (
 __all__ = [
     "__version__",
     "connect_insula",
+    "open_dataset",
+    "build_dataset",
+    "PhiestaDataset",
     "L0_event",
     "L1_event",
     "L1A_event",

@@ -277,6 +277,22 @@ class InsulaClient:
         )
 
 
+    def build_dataset(self, selection, out_dir, level="L1", **kwargs):
+        """Build a Phiesta dataset from an arbitrary product selection."""
+        from phiesta.datasets import build_dataset
+        return build_dataset(self, selection, out_dir=out_dir, level=level, **kwargs)
+
+
+    def build_l1_dataset(self, selection, out_dir, **kwargs):
+        """Convenience wrapper for build_dataset(..., level="L1")."""
+        return self.build_dataset(selection, out_dir=out_dir, level="L1", **kwargs)
+
+
+    def build_l0_dataset(self, selection, out_dir, **kwargs):
+        """Convenience wrapper for build_dataset(..., level="L0")."""
+        return self.build_dataset(selection, out_dir=out_dir, level="L0", **kwargs)
+
+
     def search_l1_bbox_table(
         self,
         bbox_lonlat,
@@ -415,6 +431,8 @@ class InsulaClient:
         """
         from ..l1.l1_event import L1_event
 
+        kwargs.setdefault("dest_dir", self.cache_dir / "l1")
+
         return L1_event.from_insula_identifier(
             client=self,
             ref_data_collection=PHISAT2_L1_COLLECTION,
@@ -445,7 +463,7 @@ class InsulaClient:
                 "phiesta.remote.constants before calling load_l1a(...)."
             )
 
-        kwargs.setdefault("dest_dir", DEFAULT_L1A_DOWNLOAD_DIR)
+        kwargs.setdefault("dest_dir", self.cache_dir / "l1a")
 
         return L1A_event.from_insula_identifier(
             identifier=identifier,
@@ -478,6 +496,8 @@ class InsulaClient:
             An `L0_event` if `convert=True`, otherwise a `Path`.
         """
         from ..l0.l0_event import L0_event
+
+        kwargs.setdefault("dest_dir", self.cache_dir / "l0")
 
         return L0_event.from_insula_identifier(
             client=self,
@@ -528,7 +548,7 @@ class InsulaClient:
                 folder, _ = self._resolve_or_download_product_folder(
                     ref_data_collection=PHISAT2_L1_COLLECTION,
                     identifier=ident,
-                    default_dest_dir=DEFAULT_L1_DOWNLOAD_DIR,
+                    default_dest_dir=self.cache_dir / "l1",
                     vm_root=VM_L1_ROOT,
                     vm_fallback=vm_fallback,
                     **kwargs,
@@ -539,7 +559,7 @@ class InsulaClient:
         folder, _ = self._resolve_or_download_product_folder(
             ref_data_collection=PHISAT2_L1_COLLECTION,
             identifier=identifier,
-            default_dest_dir=DEFAULT_L1_DOWNLOAD_DIR,
+            default_dest_dir=self.cache_dir / "l1",
             vm_root=VM_L1_ROOT,
             vm_fallback=vm_fallback,
             **kwargs,
@@ -639,7 +659,7 @@ class InsulaClient:
                 folder, _ = self._resolve_or_download_product_folder(
                     ref_data_collection=PHISAT2_L0_COLLECTION,
                     identifier=ident,
-                    default_dest_dir=DEFAULT_L0_DOWNLOAD_DIR,
+                    default_dest_dir=self.cache_dir / "l0",
                     vm_root=VM_L0_ROOT,
                     vm_fallback=vm_fallback,
                     **kwargs,
@@ -650,7 +670,7 @@ class InsulaClient:
         folder, _ = self._resolve_or_download_product_folder(
             ref_data_collection=PHISAT2_L0_COLLECTION,
             identifier=identifier,
-            default_dest_dir=DEFAULT_L0_DOWNLOAD_DIR,
+            default_dest_dir=self.cache_dir / "l0",
             vm_root=VM_L0_ROOT,
             vm_fallback=vm_fallback,
             **kwargs,

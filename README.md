@@ -227,6 +227,54 @@ patch_table = event.export_patches(
 
 ---
 
+## Build ML datasets
+
+Dataset selection and construction are separate in Phiesta. A selection can
+come from any source: a date/bbox search, WorldCover filtering, a custom pandas
+query, a CSV file, or simply a list of product ids.
+
+```python
+selection = ["5359", "5360"]
+dataset = client.build_l1_dataset(
+    selection,
+    out_dir="datasets/example",
+)
+```
+
+The safe default builds an acquisition-level dataset with `selection.csv`,
+`acquisitions.csv`, `patches.csv`, and `dataset.json`.
+
+Export ML-ready NumPy patches by specifying a patch size:
+
+```python
+dataset = client.build_l1_dataset(
+    selection,
+    out_dir="datasets/example_patches",
+    patch_size=1024,
+    stride=1024,
+)
+```
+
+Every input-table column is propagated to the manifests, so labels, groups,
+split assignments, WorldCover scores, quality flags, and custom annotations
+remain attached to the samples.
+
+For corrected L1 rasters before patch extraction:
+
+```python
+dataset = client.build_l1_dataset(
+    selection,
+    out_dir="datasets/example_georef",
+    georeference=True,
+    patch_size=1024,
+)
+```
+
+Builds checkpoint after every acquisition and resume by default. Re-open one
+with `from phiesta import open_dataset; dataset = open_dataset("datasets/example")`.
+
+---
+
 ## Build datasets by land-cover content
 
 Phiesta can prefilter the L1 catalog using ESA WorldCover before downloading or

@@ -133,3 +133,34 @@ service still fails for one acquisition after retries, that acquisition is
 retained in the returned candidate table and its ``worldcover_status`` is
 ``"uncertain"``. This prevents transient service failures from becoming silent
 false negatives. Use ``include_uncertain=False`` for fail-fast behavior.
+
+
+Generic dataset building
+------------------------
+
+Selections are independent from dataset construction. A selection may be a
+search/filter DataFrame, CSV file, Insula search result, or list of product ids.
+
+.. code-block:: python
+
+   dataset = client.build_l1_dataset(
+       ["5359", "5360"],
+       out_dir="datasets/example",
+   )
+
+Provide ``patch_size`` to export ML-ready ``.npy`` patches. Every selection
+column is propagated to acquisition and patch manifests, so arbitrary labels,
+groups, split assignments, WorldCover scores, and user annotations are kept.
+
+.. code-block:: python
+
+   dataset = client.build_l1_dataset(
+       selection,
+       out_dir="datasets/example",
+       patch_size=1024,
+       stride=1024,
+   )
+
+For corrected L1 rasters before patch extraction, set ``georeference=True``.
+Builds checkpoint after every acquisition and resume by default. Use
+``open_dataset(...)`` to reopen a built dataset.

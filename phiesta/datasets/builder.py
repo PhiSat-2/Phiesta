@@ -41,6 +41,22 @@ class PhiestaDataset:
             f"success={ok}, failed={failed}, patches={len(self.patches)})"
         )
 
+    @property
+    def split_manifest_path(self) -> Path:
+        return self.root / "splits.csv"
+
+    def make_splits(self, **kwargs):
+        from .splits import make_splits
+        return make_splits(self, **kwargs)
+
+    def split_summary(self, **kwargs):
+        from .splits import split_summary
+        return split_summary(self, **kwargs)
+
+    def get_split(self, name, **kwargs):
+        from .splits import get_split
+        return get_split(self, name, **kwargs)
+
 
 def _normalize_product_id(value: Any) -> str | None:
     if value is None:
@@ -256,6 +272,22 @@ def build_dataset(
                 event = client.load_l1(pid, **load_kwargs) if level == "L1" else client.load_l0(pid, **load_kwargs)
                 record["source_product_folder"] = str(getattr(event, "product_folder", "") or "")
                 meta = getattr(event, "meta", {}) or {}
+
+                # Keep catalog center metadata even when the selection was only
+                # a list of ids, so spatial splitting remains available.
+                catalog_geo = meta.get("catalog_geo")
+                if isinstance(catalog_geo, dict):
+                    center = catalog_geo.get("center_lonlat")
+                    if center is not None and len(center) >= 2:
+                        if record.get("center_lon") in (None, ""):
+                            record["center_lon"] = float(center[0])
+                        if record.get("center_lat") in (None, ""):
+                            record["center_lat"] = float(center[1])
+                    if record.get("start_datetime") in (None, ""):
+                        value = catalog_geo.get("start_datetime")
+                        if value is not None:
+                            record["start_datetime"] = value
+
                 raster_path = meta.get("raster_path") or meta.get("path") or ""
                 work_event = event
 

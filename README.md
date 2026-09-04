@@ -273,6 +273,44 @@ dataset = client.build_l1_dataset(
 Builds checkpoint after every acquisition and resume by default. Re-open one
 with `from phiesta import open_dataset; dataset = open_dataset("datasets/example")`.
 
+
+### Leakage-safe train/val/test splits
+
+Splits are created at acquisition/group level and propagated to every patch:
+
+```python
+dataset.make_splits(train=0.8, val=0.1, test=0.1, seed=42)
+```
+
+Keep related acquisitions together with any manifest column:
+
+```python
+dataset.make_splits(group_by="pass_id", seed=42, overwrite=True)
+```
+
+For stronger EO separation:
+
+```python
+dataset.make_splits(
+    method="spatial",
+    min_distance_km=100,
+    seed=42,
+    overwrite=True,
+)
+```
+
+Spatial mode builds connected components of acquisitions whose catalog centers
+are closer than the requested distance. Acquisitions in different splits therefore
+have at least that catalog-center separation. Large connected components can make
+the achieved train/val/test ratios approximate rather than exact.
+
+Assignments are written to `acquisitions.csv`, `patches.csv`, and `splits.csv`.
+
+```python
+dataset.split_summary()
+train = dataset.get_split("train")
+```
+
 ---
 
 ## Build datasets by land-cover content

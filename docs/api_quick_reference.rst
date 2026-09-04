@@ -164,3 +164,33 @@ groups, split assignments, WorldCover scores, and user annotations are kept.
 For corrected L1 rasters before patch extraction, set ``georeference=True``.
 Builds checkpoint after every acquisition and resume by default. Use
 ``open_dataset(...)`` to reopen a built dataset.
+
+
+Leakage-safe dataset splits
+---------------------------
+
+.. code-block:: python
+
+   dataset.make_splits(
+       train=0.8,
+       val=0.1,
+       test=0.1,
+       seed=42,
+   )
+
+Splits are assigned at acquisition/group level and propagated to every patch.
+Use ``group_by="pass_id"`` (or any manifest column) to keep related acquisitions
+together. Spatial separation is available with:
+
+.. code-block:: python
+
+   dataset.make_splits(
+       method="spatial",
+       min_distance_km=100,
+       seed=42,
+       overwrite=True,
+   )
+
+Spatial mode guarantees the requested minimum catalog-center distance across
+different splits. Use ``dataset.split_summary()`` and
+``dataset.get_split("train")`` to inspect the result.

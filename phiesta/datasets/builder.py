@@ -65,6 +65,14 @@ class PhiestaDataset:
         from .targets import list_targets
         return list_targets(self)
 
+    def to_torch(self, **kwargs):
+        from .torch_adapter import to_torch
+        return to_torch(self, **kwargs)
+
+    def to_dataloader(self, **kwargs):
+        from .torch_adapter import to_dataloader
+        return to_dataloader(self, **kwargs)
+
 
 def _normalize_product_id(value: Any) -> str | None:
     if value is None:

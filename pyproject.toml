@@ -49,6 +49,9 @@ triplets = [
 docs = [
     "sphinx",
 ]
+ml = [
+    "torch",
+]
 
 
 [project.urls]

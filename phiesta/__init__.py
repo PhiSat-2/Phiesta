@@ -35,11 +35,14 @@ from phiesta.geometry import (
 
 from phiesta.datasets import (
     PhiestaDataset,
+    PhiestaTorchDataset,
     TargetContext,
     TargetResult,
     build_dataset,
     column_target,
     open_dataset,
+    to_dataloader,
+    to_torch,
     raster_target,
     worldcover_target,
 )
@@ -56,6 +59,9 @@ __all__ = [
     "open_dataset",
     "build_dataset",
     "PhiestaDataset",
+    "PhiestaTorchDataset",
+    "to_torch",
+    "to_dataloader",
     "worldcover_target",
     "raster_target",
     "column_target",

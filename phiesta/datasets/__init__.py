@@ -17,6 +17,9 @@ __all__ = [
     "column_target",
     "raster_target",
     "worldcover_target",
+    "PhiestaTorchDataset",
+    "to_torch",
+    "to_dataloader",
 ]
 
 from .targets import (
@@ -29,3 +32,5 @@ from .targets import (
     raster_target,
     worldcover_target,
 )
+
+from .torch_adapter import PhiestaTorchDataset, to_dataloader, to_torch

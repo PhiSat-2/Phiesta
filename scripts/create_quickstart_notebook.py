@@ -526,9 +526,8 @@ notebook = {
 }
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-OUT.write_text(
-    json.dumps(notebook, indent=1, ensure_ascii=False) + "\n",
-    encoding="utf-8",
+OUT.write_bytes(
+    (json.dumps(notebook, indent=1, ensure_ascii=False) + "\n").encode("utf-8")
 )
 
 print(f"Wrote {OUT} with {len(cells)} cells")

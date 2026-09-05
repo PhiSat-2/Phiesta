@@ -12,11 +12,18 @@ def test_quickstart_notebook_is_current_and_safe():
     ]
     text = "\n".join(sources)
 
-    assert "RUN_FULL_TRIPLET = False" in text
-    assert "RUN_FULL_TRIPLET = True" not in text
-    assert "RUN_GEOREFERENCE = False" in text
-    assert "RUN_DATASET_WORKFLOW = False" in text
-    assert "RUN_WORLDCOVER_SEARCH = False" in text
+    code_lines = {
+        line.strip()
+        for cell in notebook["cells"]
+        if cell.get("cell_type") == "code"
+        for line in "".join(cell.get("source", [])).splitlines()
+    }
+
+    assert "RUN_FULL_TRIPLET = False" in code_lines
+    assert "RUN_FULL_TRIPLET = True" not in code_lines
+    assert "RUN_GEOREFERENCE = False" in code_lines
+    assert "RUN_DATASET_WORKFLOW = False" in code_lines
+    assert "RUN_WORLDCOVER_SEARCH = False" in code_lines
 
     for api_name in (
         "search_l1_worldcover",

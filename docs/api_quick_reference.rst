@@ -194,3 +194,38 @@ together. Spatial separation is available with:
 Spatial mode guarantees the requested minimum catalog-center distance across
 different splits. Use ``dataset.split_summary()`` and
 ``dataset.get_split("train")`` to inspect the result.
+
+
+Dataset targets
+---------------
+
+Targets are independent from dataset selection and splitting. Existing manifest
+columns can be formalized as targets:
+
+.. code-block:: python
+
+   from phiesta import column_target
+
+   dataset.add_target(
+       "class",
+       column_target("label"),
+       level="acquisitions",
+   )
+
+A target provider may return a scalar, NumPy array, path, dictionary, or
+``TargetResult``. NumPy arrays are saved under ``targets/<name>/`` and indexed
+from the acquisition or patch manifest.
+
+Georeferenced local raster labels can be aligned to the exact image/patch grid:
+
+.. code-block:: python
+
+   from phiesta import raster_target
+
+   dataset.add_target(
+       "landcover",
+       raster_target("labels/landcover.tif"),
+   )
+
+For categorical ESA WorldCover rasters, use ``worldcover_target(...)``; it uses
+nearest-neighbour resampling to preserve class codes.

@@ -33,7 +33,16 @@ from phiesta.geometry import (
     interband_shift_table,
 )
 
-from phiesta.datasets import PhiestaDataset, build_dataset, open_dataset
+from phiesta.datasets import (
+    PhiestaDataset,
+    TargetContext,
+    TargetResult,
+    build_dataset,
+    column_target,
+    open_dataset,
+    raster_target,
+    worldcover_target,
+)
 
 from phiesta.specs import (
     phisat2_band_table,
@@ -47,6 +56,11 @@ __all__ = [
     "open_dataset",
     "build_dataset",
     "PhiestaDataset",
+    "worldcover_target",
+    "raster_target",
+    "column_target",
+    "TargetResult",
+    "TargetContext",
     "L0_event",
     "L1_event",
     "L1A_event",

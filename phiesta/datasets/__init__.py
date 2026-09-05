@@ -9,4 +9,23 @@ __all__ = [
     "make_splits",
     "split_summary",
     "get_split",
+    "TargetContext",
+    "TargetResult",
+    "RasterTarget",
+    "add_target",
+    "list_targets",
+    "column_target",
+    "raster_target",
+    "worldcover_target",
 ]
+
+from .targets import (
+    RasterTarget,
+    TargetContext,
+    TargetResult,
+    add_target,
+    column_target,
+    list_targets,
+    raster_target,
+    worldcover_target,
+)

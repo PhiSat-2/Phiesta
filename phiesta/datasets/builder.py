@@ -57,6 +57,14 @@ class PhiestaDataset:
         from .splits import get_split
         return get_split(self, name, **kwargs)
 
+    def add_target(self, name, provider, **kwargs):
+        from .targets import add_target
+        return add_target(self, name, provider, **kwargs)
+
+    def list_targets(self):
+        from .targets import list_targets
+        return list_targets(self)
+
 
 def _normalize_product_id(value: Any) -> str | None:
     if value is None:

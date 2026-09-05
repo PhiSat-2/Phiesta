@@ -311,6 +311,65 @@ dataset.split_summary()
 train = dataset.get_split("train")
 ```
 
+### Targets and labels
+
+Targets are independent from selection, patching, and splitting. A provider is
+any callable that receives one manifest row and returns a scalar, NumPy array,
+file path, dictionary, or `TargetResult`.
+
+Formalize an existing manifest label:
+
+```python
+from phiesta import column_target
+
+dataset.add_target(
+    "class",
+    column_target("label"),
+    level="acquisitions",
+)
+```
+
+Generate an arbitrary patch target:
+
+```python
+import numpy as np
+
+def my_target(row, *, context):
+    return np.zeros(
+        (int(row["height"]), int(row["width"])),
+        dtype=np.uint8,
+    )
+
+dataset.add_target("my_mask", my_target)
+```
+
+For any local georeferenced label raster, Phiesta can align the target exactly
+to each georeferenced image patch:
+
+```python
+from phiesta import raster_target
+
+dataset.add_target(
+    "landcover",
+    raster_target("labels/landcover.tif"),
+)
+```
+
+Categorical ESA WorldCover rasters use nearest-neighbour resampling:
+
+```python
+from phiesta import worldcover_target
+
+dataset.add_target(
+    "worldcover",
+    worldcover_target("ESA_WorldCover_10m_2021.tif"),
+)
+```
+
+Array targets are written under `targets/<name>/` and their paths/status are
+added to the relevant manifest. Target generation checkpoints after every row
+and resumes successful rows by default.
+
 ---
 
 ## Build datasets by land-cover content

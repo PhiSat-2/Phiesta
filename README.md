@@ -370,6 +370,53 @@ Array targets are written under `targets/<name>/` and their paths/status are
 added to the relevant manifest. Target generation checkpoints after every row
 and resumes successful rows by default.
 
+
+### PyTorch training adapter
+
+PyTorch is optional:
+
+```bash
+pip install -e ".[ml]"
+```
+
+Create a lazy PyTorch-compatible dataset:
+
+```python
+train_ds = dataset.to_torch(
+    split="train",
+    targets="class",
+    target_dtype="long",
+)
+
+image, label = train_ds[0]
+```
+
+Or create a `DataLoader` directly:
+
+```python
+loader = dataset.to_dataloader(
+    split="train",
+    targets="class",
+    batch_size=16,
+    shuffle=True,
+    dataset_kwargs={"target_dtype": "long"},
+)
+
+images, labels = next(iter(loader))
+```
+
+Patch arrays and array targets are loaded lazily from their `.npy` files. Scalar
+targets are read directly from the manifest.
+
+For a complete generic workflow from a `product_id,label` CSV through dataset
+construction, leakage-safe splitting, target registration, `DataLoader`, and
+one PyTorch optimization step, see
+[`examples/dataset_training_quickstart.py`](examples/dataset_training_quickstart.py).
+
+> **Normalization:** `to_torch()` converts image arrays to `float32` by default,
+> but casting is not radiometric normalization. Choose normalization appropriate
+> to the task and product level.
+
 ---
 
 ## Build datasets by land-cover content

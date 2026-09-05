@@ -229,3 +229,38 @@ Georeferenced local raster labels can be aligned to the exact image/patch grid:
 
 For categorical ESA WorldCover rasters, use ``worldcover_target(...)``; it uses
 nearest-neighbour resampling to preserve class codes.
+
+
+PyTorch adapter
+---------------
+
+Install the optional ML dependency with ``pip install -e ".[ml]"``.
+
+.. code-block:: python
+
+   train_ds = dataset.to_torch(
+       split="train",
+       targets="class",
+       target_dtype="long",
+   )
+
+   image, label = train_ds[0]
+
+Or create a DataLoader directly:
+
+.. code-block:: python
+
+   loader = dataset.to_dataloader(
+       split="train",
+       targets="class",
+       batch_size=16,
+       shuffle=True,
+       dataset_kwargs={"target_dtype": "long"},
+   )
+
+``to_torch()`` converts image arrays to ``float32`` by default, but this is a
+dtype conversion rather than radiometric normalization. Choose normalization
+appropriate to the task and product level.
+
+See ``examples/dataset_training_quickstart.py`` for the complete generic
+selection-to-training workflow.

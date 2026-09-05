@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "phiesta"
 version = "0.1.0"
-description = "Mission-aware Python toolkit for access, inspection, validation, comparison, and georeferencing of ΦSat-2 products."
+description = "Mission-aware Python toolkit for ΦSat-2 product access, georeferencing, dataset construction, and ML workflows."
 readme = "README.md"
 license = "Apache-2.0"
 keywords = ["phisat-2", "earth-observation", "remote-sensing", "satellite-imagery", "multispectral"]

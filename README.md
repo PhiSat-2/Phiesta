@@ -4,9 +4,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-**Mission-aware Python toolkit for ΦSat-2 product access, inspection, validation, comparison, and georeferencing.**
+**Mission-aware Python toolkit for ΦSat-2 product access, inspection, georeferencing, dataset construction, and ML workflows.**
 
-Phiesta provides a single Python interface across raw **L0**, processed **L1A/L1C**, mission metadata, radiometric/geometric diagnostics, and Sentinel-2-assisted georeferencing workflows.
+Phiesta provides a single Python interface across raw **L0**, processed **L1A/L1C**, mission metadata, radiometric/geometric diagnostics, Sentinel-2-assisted georeferencing, and reproducible ML dataset construction.
 
 > **Documentation**
 >
@@ -15,6 +15,7 @@ Phiesta provides a single Python interface across raw **L0**, processed **L1A/L1
 > - **Installation:** [`docs/installation.rst`](docs/installation.rst)
 > - **API quick reference:** [`docs/api_quick_reference.rst`](docs/api_quick_reference.rst)
 > - **Notebook:** [`examples/Phiesta_Quickstart.ipynb`](examples/Phiesta_Quickstart.ipynb)
+> - **Dataset → PyTorch example:** [`examples/dataset_training_quickstart.py`](examples/dataset_training_quickstart.py)
 
 ---
 
@@ -30,6 +31,9 @@ It provides a simple API to:
 - visualize multispectral bands, RGB, false color, and display stretches;
 - compute simple band statistics and diagnostics;
 - patchify acquisitions into ML-ready arrays;
+- build resumable datasets from arbitrary product selections or catalog filters;
+- create acquisition/group/spatial train/validation/test splits without patch leakage;
+- attach scalar or raster-aligned targets and load datasets directly with PyTorch;
 - search for suitable Sentinel-2 reference acquisitions within a configurable temporal horizon;
 - build Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets;
 - refine georeferencing with LightGlue-based alignment;

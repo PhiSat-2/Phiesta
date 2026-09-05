@@ -1,6 +1,6 @@
-# Phiesta v0.1.0 public-release checklist
+# Phiesta v0.1.0 release checklist
 
-## Required before making the repository public
+## Required before tagging v0.1.0
 
 - [x] Remove the former vendored OrbitalAI helper package from the public release; keep provenance in third-party notices.
 - [ ] Record the exact redistribution/license terms for `third_party/phisat2_exec/*.bin`.
@@ -11,10 +11,17 @@
 - [ ] Test one simulator workflow on each platform intended to be supported by the bundled executable assets.
 - [ ] Verify no credentials, tokens, local absolute paths, or downloaded mission data are committed.
 
+### Dataset / ML workflow
+
+- [x] Build a real L1 patch dataset from Insula and verify resumable manifests.
+- [x] Verify acquisition-level split propagation to patch rows and persistence after reopening.
+- [x] Verify a real Phiesta dataset can be consumed through `to_torch()` and `to_dataloader()`.
+- [x] Add a generic end-to-end selection → dataset → split → target → PyTorch example.
+
 ## GitHub repository settings
 
 - [ ] Repository: `PhiSat-2/Phiesta`
-- [ ] Description: `Mission-aware Python toolkit for ΦSat-2 product access, inspection, validation, comparison, and georeferencing.`
+- [ ] Description: `Mission-aware Python toolkit for ΦSat-2 product access, georeferencing, dataset construction, and ML workflows.`
 - [ ] Topics: `phisat-2`, `earth-observation`, `remote-sensing`, `satellite-imagery`, `multispectral`, `level-0`, `georeferencing`, `sentinel-2`, `python`, `esa`
 - [ ] Enable Issues.
 - [ ] Enable Discussions only if someone will actively monitor them.

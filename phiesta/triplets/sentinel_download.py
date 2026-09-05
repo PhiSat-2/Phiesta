@@ -3,11 +3,12 @@ from __future__ import annotations
 import getpass
 import json
 import os
-import zipfile
 from pathlib import Path
 from typing import Any
 
 import requests
+
+from phiesta.utils.archive import safe_extract_zip
 
 
 CATALOGUE_PRODUCTS_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
@@ -192,8 +193,7 @@ def download_cdse_product_zip(
     if verbose:
         print(f"[CDSE] Extracting {zip_path} -> {extract_dir}")
 
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        zf.extractall(extract_dir)
+    safe_extract_zip(zip_path, extract_dir)
 
     safe_dir = _find_extracted_safe_dir(extract_dir, product_name)
     if safe_dir is None:

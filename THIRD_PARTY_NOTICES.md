@@ -2,13 +2,14 @@
 
 Phiesta is licensed under the Apache License 2.0. That license applies to the Phiesta-authored source code in this repository; it does **not** automatically relicense third-party material.
 
-## OrbitalAI ΦSat-2 simulator helpers
+## ESA Φ-lab / AI4EO OrbitalAI ΦSat-2 simulator
 
 - **Upstream:** `https://github.com/AI4EO/orbitalAI/tree/main/phisat-2`
-- **Purpose:** optional ΦSat-2 image-simulation workflow.
-- **Upstream role:** the public OrbitalAI ΦSat-2 materials are retained here as provenance for the simulation workflow.
-- **Distribution:** Phiesta does not vendor the former `orbitalai_phisat2_sim` helper package. The current triplet pipeline uses Phiesta-maintained orchestration code and the separately governed platform-specific simulator executable described below.
-- **License:** upstream OrbitalAI materials and simulator executables retain their own rights and terms and are not relicensed by Phiesta's Apache-2.0 license.
+- **Context:** the upstream repository is the public starter toolkit released for the ESA Φ-lab / AI4EO OrbitalAI ΦSat-2 Challenge. The challenge explicitly included an Open Science evaluation component.
+- **Purpose in Phiesta:** optional ΦSat-2 image simulation used by the Sentinel / simulated ΦSat-2 / real ΦSat-2 triplet workflow.
+- **Distribution:** Phiesta does not vendor the former `orbitalai_phisat2_sim` helper package. The current orchestration is Phiesta-maintained code; simulator executables are handled separately below.
+- **Attribution:** publications or derived workflows using the simulator should acknowledge the ESA Φ-lab / AI4EO OrbitalAI ΦSat-2 Challenge and link to the upstream repository.
+- **Rights:** the upstream repository is public, but Phiesta does not claim that those upstream materials are licensed under Phiesta's Apache-2.0 license. Upstream materials retain their original rights and terms.
 
 ## LightGlue feature matching
 
@@ -20,11 +21,11 @@ Phiesta is licensed under the Apache License 2.0. That license applies to the Ph
 ## Platform-specific ΦSat-2 simulator executables
 
 - **Location in Phiesta:** `third_party/phisat2_exec/`
-- **Purpose:** platform-specific simulator backend used by Phiesta's simulation workflow.
+- **Upstream provenance:** platform-specific ΦSat-2 simulator packages were publicly distributed with the ESA Φ-lab / AI4EO OrbitalAI ΦSat-2 starter materials.
+- **Purpose:** simulator backend used by Phiesta's optional simulation workflow.
 - **Packaging:** repository assets; intentionally not included in the Python wheel by the current package-data configuration.
-- **License:** not covered by Phiesta's Apache-2.0 license unless the rights holder explicitly says otherwise.
-
-**Release action:** keep the authorization/redistribution terms for these binaries alongside the project records and, if available, add the exact license or notice here.
+- **Rights:** these executable assets are third-party material and are not relicensed under Phiesta's Apache-2.0 license.
+- **Project record:** retain any written authorization, redistribution terms, or later upstream license notice with the project records and reflect it here if/when an explicit notice becomes available.
 
 ## Simera / SENSE raw L0 converter
 

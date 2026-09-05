@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Generator, Optional
 import shutil
-import zipfile
 
 import requests
 import re
@@ -23,6 +22,7 @@ from .constants import (
     VM_L1A_ROOT,
 )
 from phiesta.l1a import L1A_event
+from phiesta.utils.archive import safe_extract_zip
 
 from .catalog_geometry import (
     catalog_geo_from_feature,
@@ -962,9 +962,7 @@ class InsulaClient:
         if not extract:
             return paths.zip_path
 
-        paths.extract_dir.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(paths.zip_path, "r") as zf:
-            zf.extractall(paths.extract_dir)
+        safe_extract_zip(paths.zip_path, paths.extract_dir)
 
         if not keep_zip and paths.zip_path.exists():
             paths.zip_path.unlink()

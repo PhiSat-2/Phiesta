@@ -6,7 +6,6 @@ authors:
   - family-names: de Pastor
     given-names: Malo
 version: 0.1.0
-date-released: 2026-08-25
 repository-code: "https://github.com/PhiSat-2/Phiesta"
 license: Apache-2.0
 keywords:

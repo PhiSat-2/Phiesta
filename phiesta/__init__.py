@@ -30,7 +30,12 @@ from phiesta.products import (
 )
 
 from phiesta.geometry import (
+    edge_overlay,
     interband_shift_table,
+    local_interband_shift_field,
+    plot_shift_map,
+    register_bands,
+    register_l0_to_l1,
 )
 
 from phiesta.datasets import (
@@ -88,6 +93,11 @@ __all__ = [
     "compare_levels",
     "acquisition_report",
     "interband_shift_table",
+    "local_interband_shift_field",
+    "edge_overlay",
+    "plot_shift_map",
+    "register_bands",
+    "register_l0_to_l1",
     "phisat2_band_table",
     "phisat2_product_level_specs",
     "mission_spec_report",

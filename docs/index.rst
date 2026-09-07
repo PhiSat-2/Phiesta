@@ -1,7 +1,7 @@
 Phiesta documentation
 =====================
 
-Phiesta provides Python tools for ΦSat-2 L1 loading, visualization, Sentinel-2 alignment, and strict georeferencing.
+Phiesta provides Python tools for ΦSat-2 L0/L1 product inspection, geometry diagnostics, Sentinel-2 georeferencing, dataset construction, and ML workflows.
 
 .. toctree::
    :maxdepth: 2
@@ -9,6 +9,7 @@ Phiesta provides Python tools for ΦSat-2 L1 loading, visualization, Sentinel-2 
 
    overview
    installation
+   geometry
    georeferencing
    api_quick_reference
 

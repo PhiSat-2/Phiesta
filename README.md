@@ -4,72 +4,28 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-**Mission-aware Python toolkit for ΦSat-2 product access, inspection, georeferencing, dataset construction, and ML workflows.**
+**Mission-aware Python tools for ΦSat-2 geometry, georeferencing, product inspection, and ML datasets.**
 
-Phiesta provides a single Python interface across raw **L0**, processed **L1A/L1C**, mission metadata, radiometric/geometric diagnostics, Sentinel-2-assisted georeferencing, and reproducible ML dataset construction.
+Phiesta works across **L0, L1A, and L1C** and is built around a simple idea:
+a satellite product does not have one geometric error. Band-to-band alignment,
+processing-level transformations, and absolute geolocation are distinct objects
+and should be measurable separately.
 
-> **Documentation**
->
-> - **Start here:** [`docs/overview.rst`](docs/overview.rst)
-> - **Georeferencing guide:** [`docs/georeferencing.rst`](docs/georeferencing.rst)
-> - **Installation:** [`docs/installation.rst`](docs/installation.rst)
-> - **API quick reference:** [`docs/api_quick_reference.rst`](docs/api_quick_reference.rst)
-> - **Notebook:** [`examples/Phiesta_Quickstart.ipynb`](examples/Phiesta_Quickstart.ipynb)
-> - **Dataset → PyTorch example:** [`examples/dataset_training_quickstart.py`](examples/dataset_training_quickstart.py)
-
----
-
-## What Phiesta does
-
-Phiesta is a research-oriented Python toolkit for working with **ΦSat-2 products from raw L0 through processed L1A/L1C acquisitions**.
-
-It provides a simple API to:
-
-- open local ΦSat-2 L0, L1A, and L1C products;
-- download/load acquisitions from Insula;
-- inspect metadata, bands, raster shape, CRS, transforms, and local geolocation files;
-- visualize multispectral bands, RGB, false color, and display stretches;
-- compute simple band statistics and diagnostics;
-- patchify acquisitions into ML-ready arrays;
-- build resumable datasets from arbitrary product selections or catalog filters;
-- create acquisition/group/spatial train/validation/test splits without patch leakage;
-- attach scalar or raster-aligned targets and load datasets directly with PyTorch;
-- search for suitable Sentinel-2 reference acquisitions within a configurable temporal horizon;
-- build Sentinel-2 / simulated ΦSat-2 / real ΦSat-2 triplets;
-- refine georeferencing with LightGlue-based alignment;
-- export corrected georeferenced PhiSat-2 GeoTIFFs as directly usable `L1_event` objects.
-
----
-
-## Installation
-
-Clone the repository:
+## Install
 
 ```bash
 git clone https://github.com/PhiSat-2/Phiesta.git
 cd Phiesta
+pip install -e ".[triplets,ml]"
 ```
 
-For the complete Phiesta workflow, including Sentinel-assisted georeferencing:
+Base inspection only:
 
 ```bash
-python -m pip install -e ".[triplets]"
+pip install -e .
 ```
 
-That single installation command includes the base package and the optional matching dependencies. If you only need local product inspection and no Sentinel-assisted georeferencing, `python -m pip install -e .` is sufficient.
-
-Quick import check:
-
-```bash
-python -c "import phiesta; from phiesta import L0_event, L1_event, L1A_event, connect_insula; print('Phiesta OK')"
-python -c "from scm_lightglue import LightGlue, SIFT; print('LightGlue OK')"
-```
-
-See [`docs/installation.rst`](docs/installation.rst) for more details.
-
----
-
-## Minimal georeferenced product from an Insula product ID
+## 30-second start
 
 ```python
 from phiesta import connect_insula
@@ -77,251 +33,125 @@ from phiesta import connect_insula
 client = connect_insula()
 event = client.load_l1("5359")
 
+event.show_rgb()
+
 product = event.georeference()
 product.show_rgb()
 
 print(product.meta["path"])
 print(product.meta["crs"])
-print(product.meta["transform"])
 ```
 
-`event.georeference()` runs the Sentinel-assisted registration, exports a
-standard georeferenced GeoTIFF, and returns a new `L1_event` backed by the
-corrected raster.
+`georeference()` performs Sentinel-assisted registration, exports a standard
+GeoTIFF, and returns a new `L1_event` backed by the corrected raster.
 
-The usual product API therefore continues to work directly:
+## Geometry across the processing chain
 
-```python
-product.show_rgb()
-product.show_band("NIR")
-red = product.get_band("RED")
-cube = product.to_cube()
-```
-
-The default Sentinel-2 search horizon is +/-60 days. To restrict it, for
-example to +/-7 days:
+### Inter-band geometry
 
 ```python
-product = event.georeference(window_days=7)
-```
+from phiesta import interband_shift_table
 
-The high-level workflow uses a 2048 x 2048 final simulation by default.
-Native-size final simulation can still be requested explicitly with
-`final_simulation_target_size=None`.
-
-For intermediate homographies, geographic footprint, matching metrics and
-strict-alignment diagnostics without exporting the final raster:
-
-```python
-georef = event.get_georef()
-```
-
----
-
-## Minimal georeferencing example from a local L1 product
-
-```python
-from phiesta import L1_event
-
-event = L1_event.from_path("/path/to/PHISAT-2_L1_...")
-product = event.georeference()
-product.show_rgb()
-print(product.meta["path"])
-```
-
----
-
-## Inspect a product
-
-```python
-from phiesta import L1_event
-
-event = L1_event.from_path("/path/to/PHISAT-2_L1_...")
-
-event.show_event_info()
-```
-
-This reports the product ID, sensing time, raster shape, dtype, CRS, transform, band list, local metadata paths, and useful API calls.
-
----
-
-## Visualize bands
-
-```python
-event.show_all_bands(
-    normalization="percentile",
-    percentiles=(1, 99),
+shifts = interband_shift_table(
+    event,
+    master_band="RED",
 )
 
-event.show_band(
-    "NIR",
-    normalization="percentile",
-    percentiles=(1, 99),
+print(shifts[[
+    "target_band",
+    "dx_px",
+    "dy_px",
+    "shift_px",
+    "corr_before",
+    "corr_after",
+]])
+```
+
+For spatially varying residuals:
+
+```python
+from phiesta import local_interband_shift_field, plot_shift_map
+
+field = local_interband_shift_field(
+    event,
+    master_band="RED",
+    target_band="NIR",
+    window_size=512,
+    stride=256,
 )
 
-event.show_rgb(
-    bands=("RED", "GREEN", "BLUE"),
-    per_band=True,
-)
+plot_shift_map(field)
+```
 
-event.show_rgb(
-    bands=("NIR", "RED", "GREEN"),
-    registered=True,
-    registration_master="NIR",
+A red/cyan edge overlay is also available:
+
+```python
+from phiesta import edge_overlay
+
+overlay = edge_overlay(
+    event,
+    band_a="RED",
+    band_b="NIR",
+    align=False,
 )
 ```
 
----
+### Inter-level geometry
 
-## Band statistics and display diagnostics
+For paired raw and processed products:
 
 ```python
-stats = event.band_stats(
-    bands=("BLUE", "GREEN", "RED", "NIR"),
-    sample_size=100_000,
-    percentiles=(1, 50, 99),
+from phiesta import register_l0_to_l1
+
+l0 = client.load_l0("5359")
+l1 = client.load_l1("5359")
+
+l0_in_l1 = register_l0_to_l1(
+    l0,
+    l1,
+    master_band="NIR",
 )
 
-event.plot_distribution("NIR")
-event.plot_display_diagnostics()
-event.compare_display_stretches(bands=("NIR", "RED", "GREEN"))
+print(l0_in_l1.meta["registration_info"])
 ```
 
----
+The registration record contains the master L0→L1 translation, per-band
+residual shifts, and crop/reference-space metadata.
 
-## Patchify an acquisition
+### Absolute geolocation
 
 ```python
-patch_index = event.build_patch_index(
-    patch_size=1024,
-    stride=1024,
-)
-
-print(patch_index.head())
+corrected = l1.georeference()
 ```
 
-Iterate over patches:
+This is deliberately separate from inter-band and inter-level geometry.
 
-```python
-for item in event.iter_patches(
-    patch_size=1024,
-    stride=1024,
-    bands=("RED", "GREEN", "BLUE"),
-    normalization="percentile",
-    percentiles=(1, 99),
-):
-    patch = item["patch"]
-    meta = item["metadata"]
-    print(meta["patch_id"], patch.shape)
-    break
-```
-
-Export patches:
-
-```python
-patch_table = event.export_patches(
-    out_dir="outputs/patches_5359",
-    patch_size=1024,
-    stride=1024,
-    bands=("RED", "GREEN", "BLUE"),
-    normalization="percentile",
-    percentiles=(1, 99),
-)
-```
-
----
+See **[Geometry diagnostics](docs/geometry.rst)** and
+**[Georeferencing](docs/georeferencing.rst)**.
 
 ## Build ML datasets
 
-Dataset selection and construction are separate in Phiesta. A selection can
-come from any source: a date/bbox search, WorldCover filtering, a custom pandas
-query, a CSV file, or simply a list of product ids.
+Selection, construction, splitting, targets, and training adapters are separate
+steps:
 
 ```python
 selection = ["5359", "5360"]
+
 dataset = client.build_l1_dataset(
     selection,
     out_dir="datasets/example",
+    patch_size=512,
 )
-```
 
-The safe default builds an acquisition-level dataset with `selection.csv`,
-`acquisitions.csv`, `patches.csv`, and `dataset.json`.
-
-Export ML-ready NumPy patches by specifying a patch size:
-
-```python
-dataset = client.build_l1_dataset(
-    selection,
-    out_dir="datasets/example_patches",
-    patch_size=1024,
-    stride=1024,
-)
-```
-
-Every input-table column is propagated to the manifests, so labels, groups,
-split assignments, WorldCover scores, quality flags, and custom annotations
-remain attached to the samples.
-
-For corrected L1 rasters before patch extraction:
-
-```python
-dataset = client.build_l1_dataset(
-    selection,
-    out_dir="datasets/example_georef",
-    georeference=True,
-    patch_size=1024,
-)
-```
-
-Builds checkpoint after every acquisition and resume by default. Re-open one
-with `from phiesta import open_dataset; dataset = open_dataset("datasets/example")`.
-
-
-### Leakage-safe train/val/test splits
-
-Splits are created at acquisition/group level and propagated to every patch:
-
-```python
-dataset.make_splits(train=0.8, val=0.1, test=0.1, seed=42)
-```
-
-Keep related acquisitions together with any manifest column:
-
-```python
-dataset.make_splits(group_by="pass_id", seed=42, overwrite=True)
-```
-
-For stronger EO separation:
-
-```python
 dataset.make_splits(
-    method="spatial",
-    min_distance_km=100,
+    train=0.8,
+    val=0.1,
+    test=0.1,
     seed=42,
-    overwrite=True,
 )
 ```
 
-Spatial mode builds connected components of acquisitions whose catalog centers
-are closer than the requested distance. Acquisitions in different splits therefore
-have at least that catalog-center separation. Large connected components can make
-the achieved train/val/test ratios approximate rather than exact.
-
-Assignments are written to `acquisitions.csv`, `patches.csv`, and `splits.csv`.
-
-```python
-dataset.split_summary()
-train = dataset.get_split("train")
-```
-
-### Targets and labels
-
-Targets are independent from selection, patching, and splitting. A provider is
-any callable that receives one manifest row and returns a scalar, NumPy array,
-file path, dictionary, or `TargetResult`.
-
-Formalize an existing manifest label:
+Attach a label already present in the manifest:
 
 ```python
 from phiesta import column_target
@@ -329,416 +159,101 @@ from phiesta import column_target
 dataset.add_target(
     "class",
     column_target("label"),
-    level="acquisitions",
 )
 ```
 
-Generate an arbitrary patch target:
-
-```python
-import numpy as np
-
-def my_target(row, *, context):
-    return np.zeros(
-        (int(row["height"]), int(row["width"])),
-        dtype=np.uint8,
-    )
-
-dataset.add_target("my_mask", my_target)
-```
-
-For any local georeferenced label raster, Phiesta can align the target exactly
-to each georeferenced image patch:
-
-```python
-from phiesta import raster_target
-
-dataset.add_target(
-    "landcover",
-    raster_target("labels/landcover.tif"),
-)
-```
-
-Categorical ESA WorldCover rasters use nearest-neighbour resampling:
-
-```python
-from phiesta import worldcover_target
-
-dataset.add_target(
-    "worldcover",
-    worldcover_target("ESA_WorldCover_10m_2021.tif"),
-)
-```
-
-Array targets are written under `targets/<name>/` and their paths/status are
-added to the relevant manifest. Target generation checkpoints after every row
-and resumes successful rows by default.
-
-
-### PyTorch training adapter
-
-PyTorch is optional:
-
-```bash
-pip install -e ".[ml]"
-```
-
-Create a lazy PyTorch-compatible dataset:
-
-```python
-train_ds = dataset.to_torch(
-    split="train",
-    targets="class",
-    target_dtype="long",
-)
-
-image, label = train_ds[0]
-```
-
-Or create a `DataLoader` directly:
+Use it directly with PyTorch:
 
 ```python
 loader = dataset.to_dataloader(
     split="train",
     targets="class",
     batch_size=16,
-    shuffle=True,
-    dataset_kwargs={"target_dtype": "long"},
-)
-
-images, labels = next(iter(loader))
-```
-
-Patch arrays and array targets are loaded lazily from their `.npy` files. Scalar
-targets are read directly from the manifest.
-
-For a complete generic workflow from a `product_id,label` CSV through dataset
-construction, leakage-safe splitting, target registration, `DataLoader`, and
-one PyTorch optimization step, see
-[`examples/dataset_training_quickstart.py`](examples/dataset_training_quickstart.py).
-
-> **Normalization:** `to_torch()` converts image arrays to `float32` by default,
-> but casting is not radiometric normalization. Choose normalization appropriate
-> to the task and product level.
-
----
-
-## Build datasets by land-cover content
-
-Phiesta can prefilter the L1 catalog using ESA WorldCover before downloading or
-running expensive image georeferencing.
-
-```python
-candidates = client.search_l1_worldcover("mangrove")
-```
-
-The default is deliberately recall-oriented: the full catalog footprint is
-buffered by 30 km and ``min_fraction=1e-6``.
-
-Server-side WorldCover statistics use ``statistics_max_size=1024`` by default so catalog-wide searches stay practical. This stage is a candidate prefilter; exact spatial membership can be checked later on corrected georeferenced products.
-
-Transient WorldCover-service failures are conservatively retained as candidates with `worldcover_status="uncertain"` instead of aborting the scan or silently creating false negatives.
-
-```python
-candidates = client.search_l1_worldcover(
-    "built_up",
-    min_fraction=0.25,
-    spatial_tolerance_km=30,
 )
 ```
 
-This stage uses only Insula catalog geometry and public Planetary Computer WorldCover statistics. It does not download PhiSat-2 acquisitions, store WorldCover tiles, or run georeferencing.
+Phiesta also supports raster-aligned targets and WorldCover-based catalog
+prefiltering.
 
-The resulting table plugs into the existing loader:
+See **[Dataset → PyTorch example](examples/dataset_training_quickstart.py)**.
 
-```python
-events = client.load_l1_table(candidates)
-```
-
-If exact spatial membership is required, georeference only these candidates
-and re-test the corrected footprints.
-
-
----
-
-## Build a Sentinel-2 triplet manually
+## Product inspection
 
 ```python
-triplet = event.build_full_sentinel_triplet(
-    sentinel_backend="download",
-    buffer_km=20,
-    proxy_target_size=(1024, 1024),
-    verbose=True,
+event.show_event_info()
+event.show_all_bands()
+event.show_band("NIR")
+event.show_rgb(bands=("NIR", "RED", "GREEN"))
+
+stats = event.band_stats(
+    bands=("BLUE", "GREEN", "RED", "NIR"),
 )
 ```
 
-Then refine the georeference:
+Cross-level product metadata and processing differences can be inspected with:
 
 ```python
-strict = event.refine_triplet_georeference_strict(
-    triplet,
-    source="simulated",
-    verbose=True,
-)
+from phiesta import compare_levels
+
+report = compare_levels(l1a, l1c)
 ```
 
-For most users, `event.georeference()` is the recommended high-level entry point. Use `event.get_georef(...)` for advanced access to the intermediate geometric solution.
+## Advanced Sentinel / simulator workflow
 
----
-
-## Local executables and simulator code
-
-Phiesta's triplet workflow includes the Python orchestration needed to run the ΦSat-2 simulation step directly with the platform-specific simulator executable. No separate simulator-helper checkout or environment variable is required.
-
-Authorized platform-specific simulator executables are versioned under:
+Phiesta can build aligned:
 
 ```text
-third_party/phisat2_exec/
+Sentinel-2
+   ↕
+simulated ΦSat-2
+   ↕
+real ΦSat-2
 ```
 
-contains only a README placeholder. If authorized users have local executable binaries, they can place them there locally or pass their path explicitly through the API.
+For most users, `event.georeference()` is the recommended entry point.
+`build_full_sentinel_triplet()` and `get_georef()` expose the advanced
+intermediate workflow.
 
----
+The simulator provenance and third-party rights are documented in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-## Repository layout
+## Documentation
 
-```text
-phiesta/
-  l0/          L0 event loading/conversion helpers
-  l1/          L1 event loading, visualization, patchify, georef entry points
-  georef/      geospatial utilities and feature preparation
-  remote/      Insula search/download utilities
-  triplets/    Sentinel-2 sourcing, simulation, alignment, strict georef
-  utils/       display, patchify, metadata helpers
+- [Overview](docs/overview.rst)
+- [Geometry diagnostics](docs/geometry.rst)
+- [Georeferencing](docs/georeferencing.rst)
+- [Installation](docs/installation.rst)
+- [API quick reference](docs/api_quick_reference.rst)
+- [Main notebook](examples/Phiesta_Quickstart.ipynb)
+- [Dataset training quickstart](examples/dataset_training_quickstart.py)
 
-docs/
-  overview.rst
-  installation.rst
-  georeferencing.rst
-  api_quick_reference.rst
+## Research reference analysis
 
-examples/
-  Phiesta_Quickstart.ipynb
-  api_smoke_test.py
-```
+The repository contains a publication-oriented geometry audit plan under
+[`analysis/geometry_audit/`](analysis/geometry_audit/).
 
----
+The intended scientific question is:
 
-## ΦSat-2 ecosystem
+> **Where does geometric error live in the ΦSat-2 processing chain?**
 
-Phiesta is designed to complement the other public ΦSat-2 resources rather than replace them:
+Phiesta is the reproducibility artifact; the analysis is intended to study
+inter-band, inter-level, and absolute geometry rather than merely describe the
+software.
 
-- **Portal-Access** documents how to request and access ΦSat-2 data.
-- **Φ-down (`phidown`)** provides general search/download tooling, including ΦSat-2 support.
-- **Data-Spec** defines dataset formatting used by ΦSatNet-related workflows.
-- **Phiesta** focuses on mission-aware product loading, L0/L1 inspection, validation, cross-level comparison, diagnostics, and georeferencing.
+## Citation
 
----
+If you use Phiesta in research, please cite the software and the relevant
+ΦSat-2 mission/data publications. Citation metadata are provided in
+[`CITATION.cff`](CITATION.cff).
 
-## References and credits
+## Contributing and contact
 
-Phiesta builds on public Earth-observation tools, data services, and research code:
+Issues and pull requests are welcome. For questions, use
+[GitHub Issues](https://github.com/PhiSat-2/Phiesta/issues).
 
-- **ΦSat-2 mission:** ESA ΦSat-2 mission material.
-- **Sentinel-2 access:** Copernicus Data Space Ecosystem catalogue and OData download API.
-- **ΦSat-2 simulator:** Phiesta includes the Python orchestration used by the triplet workflow and calls the authorized platform-specific simulator executable; see `THIRD_PARTY_NOTICES.md` for provenance and redistribution terms.
-- **Feature matching:** LightGlue for local feature matching.
-- **Land-cover context, when used:** ESA WorldCover 2021 v200.
-
-External services and bundled third-party components may have their own terms. The Apache-2.0 license applies to Phiesta itself; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for components that are not covered by that license.
-
----
-
-## Status
-
-Phiesta is an early research-oriented toolkit. APIs may evolve as the georeferencing workflow, strict alignment strategy, and documentation are improved.
-
-## Product-level inspection API
-
-Phiesta provides product-level utilities for opening, inspecting, screening, comparing, and mission-checking PhiSat-2 products.
-
-### Basic usage
-
-```python
-import phiesta
-
-event = phiesta.open_product("6008", level="L1C")
-
-card = phiesta.product_card(event)
-manifest = phiesta.file_manifest(event)
-families = phiesta.file_family_summary(event)
-switches = phiesta.processing_switches(event)
-rasters = phiesta.raster_inventory(event)
-
-quality = phiesta.quality_report(event)
-```
-
-### Product gallery
-
-```python
-import phiesta
-
-df = phiesta.product_gallery(
-    ["5978", "5979", "6008", "6025"],
-    level="L1C",
-    out_path="outputs/l1c_screening_gallery.png",
-)
-```
-
-### Processing-level comparison
-
-```python
-import phiesta
-
-l1a = phiesta.open_product("6008", level="L1A")
-l1c = phiesta.open_product("6008", level="L1C")
-
-comparison = phiesta.compare_levels(
-    l1a,
-    l1c,
-    include_shift=True,
-)
-```
-
-### Mission-aware specification report
-
-```python
-import phiesta
-
-event = phiesta.open_product("6008", level="L1C")
-
-mission_report = phiesta.mission_spec_report(event)
-band_table = phiesta.phisat2_band_table()
-level_specs = phiesta.phisat2_product_level_specs()
-```
-
-The mission-aware report checks observed product metadata against encoded PhiSat-2 product expectations, including image shape, band count, georeferencing presence, CRS metadata, radiance/reflectance level, and expected band-alignment behaviour.
-
-### Quickstart example
-
-Run from the repository root:
-
-```bash
-PYTHONPATH="$PWD" python examples/product_inspection_quickstart.py
-```
-
-On the ESA PhiLab container environment, use `phipy` instead of `python`.
-
-The example demonstrates:
-
-- product cards and file manifests;
-- processing-switch inspection;
-- raster inventory extraction;
-- heuristic product screening;
-- annotated product galleries;
-- mission-aware product specification checks;
-- L1A/L1C comparison with inter-band shift diagnostics.
-
-### Raw L0 inspection
-
-Phiesta can open or download raw L0 product folders without requiring the external rawbin converter.
-
-```python
-import phiesta
-
-raw_folder = phiesta.open_raw_l0_product("5090")
-report = phiesta.raw_l0_report(raw_folder)
-```
-
-A raw L0 folder typically contains `raw.bin`, `metadata.json`, `ancillary.json`, `aocs.json`, and a thumbnail.
-
-Building a prepared `L0_event` from `raw.bin` requires the external Simera/SENSE conversion code, configured through `PHIESTA_SIM_ROOT`. This external converter is not redistributed with Phiesta.
-
-Use:
-
-```python
-raw_folder = phiesta.open_raw_l0_product("5090")
-```
-
-for public raw-folder access, and:
-
-```python
-l0 = phiesta.open_product("5090", level="L0")
-```
-
-only when the external converter is configured and a prepared `L0_event` is desired.
-
-### Acquisition-level report
-
-Phiesta can summarize all locally available product levels for the same acquisition.
-
-```python
-import phiesta
-
-report = phiesta.acquisition_report("6008")
-```
-
-By default, `acquisition_report` is local-only and does not trigger new Insula downloads. It reports available and missing levels, raw L0 availability, L1A/L1C product cards, mission-spec checks, and an L1A/L1C comparison when both processed levels are available.
-
-Use:
-
-```python
-report = phiesta.acquisition_report("5090", download_missing=False)
-```
-
-to inspect only already available local products, or:
-
-```python
-report = phiesta.acquisition_report("5090", download_missing=True)
-```
-
-to allow Insula fallback for missing levels.
-
-## Data access behaviour
-
-Phiesta uses a local-first strategy for PhiSat-2 products.
-
-By default, product-opening helpers first look for an already available local product folder. If the requested product is missing locally, Phiesta can fall back to Insula when `download_missing=True`.
-
-For public examples and reproducible local workflows, use `download_missing=False`:
-
-```python
-import phiesta
-
-event = phiesta.open_product("6008", level="L1C", download_missing=False)
-```
-
-With `download_missing=False`, Phiesta never triggers remote authentication. Missing products raise `FileNotFoundError`.
-
-To allow remote fallback through Insula, use:
-
-```python
-event = phiesta.open_product("6008", level="L1C", download_missing=True)
-```
-
-In that case, Phiesta tries local resolution first, then requests Insula credentials only if the product is not available locally.
-
-Raw L0 access is separated from prepared L0 decoding:
-
-```python
-raw_folder = phiesta.open_raw_l0_product("5090", download_missing=True)
-report = phiesta.raw_l0_report(raw_folder)
-```
-
-This opens or downloads the raw L0 product folder without decoding `raw.bin`.
-
-A raw L0 folder typically contains `raw.bin`, `metadata.json`, `ancillary.json`, `aocs.json`, and a thumbnail.
-
-Building a prepared `L0_event` from `raw.bin` requires the external Simera/SENSE conversion code, configured through `PHIESTA_SIM_ROOT`. This converter is not redistributed with Phiesta.
-
-Summary:
-
-- `open_product(..., download_missing=False)`: local-only, never asks for Insula credentials.
-- `open_product(..., download_missing=True)`: local-first, then Insula fallback if missing.
-- `open_raw_l0_product(..., download_missing=True)`: raw L0 access/download without requiring the external converter.
-- `open_product(..., level="L0")`: builds a prepared `L0_event`; this requires the external converter when only raw L0 data is present.
-
-
-
----
+Maintainer: **Malo de Pastor**.
 
 ## License
 
-Phiesta is released under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
-
-Third-party source code and executable components are **not automatically relicensed** under Apache-2.0. Their provenance and licensing status are documented in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Phiesta code is released under the Apache-2.0 license. Third-party simulator
+assets retain their original rights; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

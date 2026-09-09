@@ -25,10 +25,14 @@ def build_single_product_report(
 
     qc_report_source = qc_report.get("sentinel_source", {})
     georef_report_metrics = georef_report.get("metrics", {})
+    catalog_geo = event._meta["catalog_geo"]
 
     single_product_report = {
          # Product
-         "phisat2_product_id": event._meta["catalog_geo"]["filename"], # productIdentifier
+         "phisat2_product_id": catalog_geo["filename"], # productIdentifier
+         "timestamp": catalog_geo["start_datetime"],
+         "original_footprint": catalog_geo.get("geometry_geojson"),
+
 
          # Sentinel source
          "sentinel_satellite": qc_report_source.get("satellite"),
@@ -119,7 +123,7 @@ def cleanup_phiesta_outputs(
             shutil.rmtree(cache_dir)
 
     if remove_georef_file:
-        georef_dir = Path(f"georef_{product_id}.json")
+        georef_dir = output_root / f"georef_{product_id}.json"
         if georef_dir.exists():
             georef_dir.unlink()
 
@@ -161,7 +165,9 @@ def run_phiesta_over_one_product(
     }
 
     event = None
-    georef_report_path = Path(f"georef_{product_id}.json")
+
+    output_root = Path(output_root)
+    georef_report_path = output_root / f"georef_{product_id}.json"
 
     try:
         load_dotenv()
@@ -237,15 +243,17 @@ if __name__ == '__main__':
 
         reports_list.append(single_product_report)
 
+        pd.DataFrame(reports_list).to_csv(
+                    "majortom_analysis/phiesta_batch_run_results.csv",
+                    index=False,
+                )
+
         cleanup_phiesta_outputs(
             phisat_pid,
-            remove_triplet = True,
+            remove_triplet = False,
             remove_phisat_l1 = True,
             remove_sentinel_cache = True,
-            remove_georef_file = True
+            remove_georef_file = False
         )
 
-        pd.DataFrame(reports_list).to_csv(
-            "majortom_analysis/phiesta_batch_run_results.csv",
-            index=False,
-        )
+        

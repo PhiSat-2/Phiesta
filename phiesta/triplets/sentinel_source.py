@@ -87,6 +87,8 @@ def _fetch_l1c_twin(
         satellite = "S2A"
     elif "S2B_" in name:
         satellite = "S2B"
+    elif "S2C_" in name:
+            satellite = "S2C"
 
     query = (
         "Collection/Name eq 'SENTINEL-2' "
@@ -194,7 +196,7 @@ def find_best_sentinel_source_for_bbox(
     session = session or requests.Session()
 
     if satellite is None:
-        satellite = ["S2A", "S2B"]
+        satellite = ["S2A", "S2B", "S2C"]
 
     min_lon_b, min_lat_b, max_lon_b, max_lat_b = _buffer_lonlat_bbox(
         min_lon=min_lon,
@@ -342,6 +344,8 @@ def find_best_sentinel_source_for_bbox(
             selected_satellites.add("S2A")
         elif "S2B_" in p["Name"]:
             selected_satellites.add("S2B")
+        elif "S2C_" in p["Name"]:
+            selected_satellites.add("S2C")
 
     if len(selected_satellites) == 1:
         selected_satellite = selected_satellites.pop()

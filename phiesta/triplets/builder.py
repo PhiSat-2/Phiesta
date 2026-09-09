@@ -87,7 +87,7 @@ def build_sentinel_triplet(
     save: bool = True,
     verbose: bool = True,
     run_sentinel_source: bool = True,
-    min_coverage: float = 0.85,
+    min_coverage: float = 0.50,
     run_sentinel_crop: bool = True,
     overwrite_crop: bool = False,
     sentinel_backend: str = "auto",
@@ -163,7 +163,7 @@ def build_sentinel_triplet(
             print("[Phiesta] PhiSat-2 backend: Python alternative")
 
     if satellite is None:
-        satellite = ["S2A", "S2B"]
+        satellite = ["S2A", "S2B", "S2C"]
 
     if run_sentinel_source:
         if verbose:

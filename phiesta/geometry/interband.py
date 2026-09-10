@@ -65,6 +65,19 @@ def _get_band(event: Any, band: Any) -> np.ndarray:
     return np.asarray(event.get_band(band))
 
 
+def _resolve_band_index(event: Any, band: Any) -> int:
+    if isinstance(band, (int, np.integer)):
+        return int(band)
+
+    resolver = getattr(event, "_resolve_band_index_for_registration", None)
+    if callable(resolver):
+        return int(resolver(band))
+
+    raise ValueError(
+        f"Cannot resolve band selector {band!r} to an integer index."
+    )
+
+
 def _downsample(
     image: np.ndarray,
     max_side: int = 1024,
@@ -180,7 +193,8 @@ def interband_shift_table(
 
     This is a diagnostic measurement, not a certified geometric calibration.
     """
-    master_full = _get_band(event, master_band).astype(np.float32)
+    master_band_index = _resolve_band_index(event, master_band)
+    master_full = _get_band(event, master_band_index).astype(np.float32)
     master, scale = _downsample(master_full, max_side=max_side)
 
     if target_bands == "all":
@@ -196,11 +210,38 @@ def interband_shift_table(
 
     rows = []
     for band in target_bands:
-        if band == master_band:
+        try:
+            target_band_index = _resolve_band_index(event, band)
+        except Exception as exc:
+            rows.append(
+                {
+                    "product_id": _infer_product_id(event),
+                    "level": _product_level(event),
+                    "master_band": master_band,
+                    "master_band_index": master_band_index,
+                    "target_band": band,
+                    "dx_px": np.nan,
+                    "dy_px": np.nan,
+                    "shift_px": np.nan,
+                    "dx_px_downsampled": np.nan,
+                    "dy_px_downsampled": np.nan,
+                    "scale": np.nan,
+                    "response": np.nan,
+                    "corr_before": np.nan,
+                    "corr_after": np.nan,
+                    "corr_gain": np.nan,
+                    "max_side": max_side,
+                    "status": "failed",
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+            continue
+
+        if target_band_index == master_band_index:
             continue
 
         try:
-            target_full = _get_band(event, band).astype(np.float32)
+            target_full = _get_band(event, target_band_index).astype(np.float32)
             target, target_scale = _downsample(
                 target_full,
                 max_side=max_side,
@@ -243,7 +284,8 @@ def interband_shift_table(
                 "product_id": _infer_product_id(event),
                 "level": _product_level(event),
                 "master_band": master_band,
-                "target_band": band,
+                "master_band_index": master_band_index,
+                "target_band": target_band_index,
                 "dx_px": dx,
                 "dy_px": dy,
                 "shift_px": shift_px,

@@ -53,6 +53,64 @@ def _extract_acq_id(text: str | None) -> Optional[str]:
     out = m.group(1).lstrip("0")
     return out if out else "0"
 
+def _platform_file_id_from_href(href: str | None) -> str | None:
+    """Extract an INSULA platform-file id from a platformFile link."""
+    if not href:
+        return None
+    match = re.search(r"/(?:products/)?platform/(\d+)(?:/)?$", str(href))
+    if match:
+        return match.group(1)
+    match = re.search(r"/platformFiles/(\d+)(?:/dl)?(?:/)?$", str(href))
+    if match:
+        return match.group(1)
+    return None
+
+
+def _resolve_feature_download_url(
+    feature: Dict[str, Any],
+    *,
+    base_url: str,
+) -> str:
+    """
+    Resolve a browser-reachable INSULA download URL from a REF_DATA feature.
+
+    Some catalogue collections expose ``_links.download.href`` directly.
+    Others, including current PhiSat-2 L1A products, expose only a
+    ``_links.platformFile.href`` pointing to the platform-file record.
+    """
+    props = feature.get("properties") or {}
+    links = props.get("_links") or {}
+
+    direct = links.get("download")
+    if isinstance(direct, dict):
+        href = direct.get("href")
+        if href:
+            return str(href)
+
+    platform_link = links.get("platformFile")
+    platform_href = (
+        platform_link.get("href")
+        if isinstance(platform_link, dict)
+        else None
+    )
+    platform_file_id = _platform_file_id_from_href(platform_href)
+    if platform_file_id is not None:
+        return (
+            f"{base_url.rstrip('/')}"
+            f"/secure/api/v2.0/platformFiles/{platform_file_id}/dl"
+        )
+
+    # services.download.url may point to an internal service hostname
+    # (e.g. eopaas-resto-phisat2) that is not reachable by external clients,
+    # so it is intentionally not used as a network fallback here.
+    available = sorted(str(key) for key in links)
+    raise ValueError(
+        "No externally usable INSULA download link found in feature. "
+        f"Available properties._links keys: {available}"
+    )
+
+
+
 def _day_bounds_utc(date_str: str) -> tuple[str, str]:
     """
     Convert YYYY-MM-DD into a UTC day interval.
@@ -930,7 +988,10 @@ class InsulaClient:
             The extracted product folder path if `extract=True`, otherwise the zip path.
         """
         props = feature["properties"]
-        download_url = props["_links"]["download"]["href"]
+        download_url = _resolve_feature_download_url(
+            feature,
+            base_url=self.base_url,
+        )
 
         paths = self._paths_from_feature(feature, base_dir=dest_dir)
 
@@ -953,6 +1014,15 @@ class InsulaClient:
             verify=self.verify_ssl,
             timeout=self.timeout_download,
         ) as resp:
+            if resp.status_code == 403:
+                raise PermissionError(
+                    "INSULA catalogue entry is visible, but this account is not "
+                    "authorized to download the product. "
+                    f"filename={props.get('filename')!r}, "
+                    f"platformUsable={props.get('platformUsable')!r}. "
+                    "This can occur when a product level is catalogued before it is "
+                    "enabled for the current account."
+                )
             resp.raise_for_status()
             with open(paths.zip_path, "wb") as f:
                 for chunk in resp.iter_content(chunk_size=1024 * 1024):

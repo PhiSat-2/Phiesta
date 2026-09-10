@@ -130,3 +130,21 @@ def test_register_bands_returns_aligned_copy():
     assert aligned is not event
     assert corr > 0.98
     assert aligned.meta["band_registration_info"]["master_band"] == 0
+
+
+def test_interband_shift_table_string_master_excludes_master():
+    rng = np.random.default_rng(11)
+    red = rng.normal(size=(96, 96)).astype(np.float32)
+    nir = np.roll(red, shift=(1, -2), axis=(0, 1))
+    event = FakeEvent(np.stack([red, red, red, nir]))
+
+    table = interband_shift_table(
+        event,
+        master_band="RED",
+        target_bands="all",
+        max_side=96,
+    )
+
+    assert int(table["master_band_index"].iloc[0]) == 2
+    assert 2 not in set(table["target_band"].astype(int))
+    assert 3 in set(table["target_band"].astype(int))

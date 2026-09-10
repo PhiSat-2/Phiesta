@@ -36,16 +36,33 @@ def main() -> None:
     catalog["product_id"] = _norm_id(catalog["product_id"])
     exclusions["product_id"] = _norm_id(exclusions["product_id"])
 
-    if catalog["product_id"].duplicated().any():
-        dup = sorted(catalog.loc[catalog["product_id"].duplicated(), "product_id"].unique())
-        raise ValueError(f"Catalog has duplicate product IDs: {dup[:10]}")
+    # product_id is the acquisition-level sampling unit. If several catalogue
+    # records share one product_id, choosing one by row order would be arbitrary.
+    # Exclude that whole ambiguous product-id group before looking at any
+    # confirmatory geometry outcome, and preserve the original rows for audit.
+    duplicate_mask = catalog["product_id"].duplicated(keep=False)
+    duplicate_rows = catalog.loc[duplicate_mask].copy()
+    ambiguous_product_ids = sorted(
+        duplicate_rows["product_id"].dropna().astype(str).unique().tolist()
+    )
+
+    duplicate_audit_csv = args.out_dir / "catalog_l1c_ambiguous_duplicates_v1.csv"
+    duplicate_rows.to_csv(duplicate_audit_csv, index=False)
 
     excluded_ids = set(exclusions["product_id"].dropna().astype(str))
     catalog_ids = set(catalog["product_id"].astype(str))
     present_exclusions = sorted(excluded_ids.intersection(catalog_ids))
     missing_exclusions = sorted(excluded_ids.difference(catalog_ids))
 
-    population = catalog[~catalog["product_id"].isin(excluded_ids)].copy()
+    population = catalog[
+        (~catalog["product_id"].isin(excluded_ids))
+        & (~catalog["product_id"].isin(ambiguous_product_ids))
+    ].copy()
+
+    if population["product_id"].duplicated().any():
+        raise RuntimeError(
+            "Eligible confirmatory population still has duplicate product IDs."
+        )
 
     out_csv = args.out_dir / "catalog_l1c_confirmatory_eligible_v1.csv"
     population.to_csv(out_csv, index=False)
@@ -54,23 +71,35 @@ def main() -> None:
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "source_catalog": str(args.catalog),
         "exclusion_manifest": str(args.exclusions),
-        "source_catalog_n": int(len(catalog)),
-        "requested_exclusion_n": int(len(excluded_ids)),
-        "present_exclusion_n": int(len(present_exclusions)),
-        "missing_exclusion_n": int(len(missing_exclusions)),
+        "source_catalog_rows_n": int(len(catalog)),
+        "source_unique_product_ids_n": int(catalog["product_id"].nunique()),
+        "ambiguous_duplicate_product_ids_n": int(len(ambiguous_product_ids)),
+        "ambiguous_duplicate_catalog_rows_n": int(len(duplicate_rows)),
+        "ambiguous_duplicate_product_ids": ambiguous_product_ids,
+        "duplicate_audit_csv": str(duplicate_audit_csv),
+        "requested_development_exclusion_n": int(len(excluded_ids)),
+        "present_development_exclusion_n": int(len(present_exclusions)),
+        "missing_development_exclusion_n": int(len(missing_exclusions)),
         "confirmatory_eligible_n": int(len(population)),
-        "present_exclusion_ids": present_exclusions,
-        "missing_exclusion_ids": missing_exclusions,
+        "present_development_exclusion_ids": present_exclusions,
+        "missing_development_exclusion_ids": missing_exclusions,
         "principle": (
-            "Products whose geometry outcomes were inspected during method development "
-            "are excluded before drawing the confirmatory probability sample."
+            "Before confirmatory sampling, exclude products whose geometry outcomes "
+            "were inspected during development and exclude every product_id that has "
+            "multiple catalogue records; preserve those rows in an audit table rather "
+            "than resolving them from row order."
         ),
     }
+
     out_json = args.out_dir / "confirmatory_population_summary_v1.json"
-    out_json.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    out_json.write_text(
+        json.dumps(summary, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     print(json.dumps(summary, indent=2))
     print(f"\nWrote: {out_csv}")
+    print(f"Wrote: {duplicate_audit_csv}")
 
 
 if __name__ == "__main__":

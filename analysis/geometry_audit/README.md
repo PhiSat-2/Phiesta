@@ -173,3 +173,13 @@ historical L1A/L1C geometry development selection. The confirmatory probability
 sample is drawn only after applying this manifest. Metadata inspection alone is
 not treated as an outcome inspection.
 
+
+#### Ambiguous catalogue identities
+
+The confirmatory sampling unit is `product_id`. If more than one distinct L1C
+catalogue record shares a `product_id`, the complete product-id group is excluded
+from the confirmatory sampling frame before any geometry outcome is inspected.
+The original rows are written to `catalog_l1c_ambiguous_duplicates_v1.csv`.
+This avoids resolving ambiguous identities by catalogue row order or by any
+geometry-dependent criterion.
+

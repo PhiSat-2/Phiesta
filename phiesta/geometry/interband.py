@@ -5,6 +5,9 @@ from typing import Any, Iterable
 import re
 import numpy as np
 import pandas as pd
+import cv2
+
+from phiesta.specs.mission import PHISAT2_BANDS
 
 from phiesta.utils.l0_l1_registration import (
     prep_for_phase_corr,
@@ -81,13 +84,47 @@ def _resolve_band_index(event: Any, band: Any) -> int:
 def _downsample(
     image: np.ndarray,
     max_side: int = 1024,
-) -> tuple[np.ndarray, float]:
+) -> tuple[np.ndarray, float, float]:
+    """Anti-aliased resize plus native-pixel scale factors (x, y)."""
     h, w = image.shape
-    scale = max(h, w) / float(max_side)
-    if scale <= 1:
-        return image, 1.0
-    step = max(1, int(round(scale)))
-    return image[::step, ::step], float(step)
+    if max(h, w) <= int(max_side):
+        return image.astype(np.float32, copy=False), 1.0, 1.0
+
+    factor = float(max_side) / float(max(h, w))
+    new_w = max(1, int(round(w * factor)))
+    new_h = max(1, int(round(h * factor)))
+    resized = cv2.resize(
+        image.astype(np.float32),
+        (new_w, new_h),
+        interpolation=cv2.INTER_AREA,
+    )
+    return resized, w / float(new_w), h / float(new_h)
+
+
+def _registration_image(image: np.ndarray) -> np.ndarray:
+    arr = np.asarray(image, dtype=np.float32)
+    finite = np.isfinite(arr)
+    if not finite.any():
+        raise ValueError("Registration image has no finite pixels.")
+    if not finite.all():
+        fill = float(np.nanmedian(arr))
+        arr = np.where(finite, arr, fill).astype(np.float32)
+    mean = float(arr.mean())
+    std = float(arr.std())
+    if std <= 1e-8:
+        raise ValueError("Registration image has near-zero variance.")
+    return (arr - mean) / std
+
+
+def _band_metadata(index: int) -> dict:
+    for item in PHISAT2_BANDS:
+        if int(item["band_index"]) == int(index):
+            return item
+    return {
+        "name": f"B{index}",
+        "central_wavelength_nm": np.nan,
+        "role": "unknown",
+    }
 
 
 def _parse_shift_result(result: Any) -> tuple[float, float, float | None]:
@@ -139,19 +176,31 @@ def _phase_shift_target_to_master(
     *,
     max_shifts=None,
 ):
-    """
-    Estimate the shift to apply to ``target`` so it aligns with ``master``.
+    """Estimate a sub-pixel target→master translation using phase correlation."""
+    target_f = _registration_image(target)
+    master_f = _registration_image(master)
+    if target_f.shape != master_f.shape:
+        raise ValueError(
+            f"Registration shapes differ: {target_f.shape} vs {master_f.shape}"
+        )
 
-    The sign convention is deliberately explicit and is shared by the global
-    and local geometry diagnostics.
-    """
-    master_t = prep_for_phase_corr(master.astype(np.float32))
-    target_t = prep_for_phase_corr(target.astype(np.float32))
-    return phase_correlation_shift(
-        master_t,
-        target_t,
-        max_shifts=max_shifts,
+    h, w = target_f.shape
+    window = cv2.createHanningWindow((w, h), cv2.CV_32F)
+    (dx, dy), response = cv2.phaseCorrelate(
+        target_f,
+        master_f,
+        window,
     )
+
+    if max_shifts is not None:
+        max_dy, max_dx = float(max_shifts[0]), float(max_shifts[1])
+        if abs(dy) > max_dy or abs(dx) > max_dx:
+            raise ValueError(
+                f"Estimated shift (dy={dy:.3f}, dx={dx:.3f}) exceeds "
+                f"plausibility limit (dy={max_dy:.3f}, dx={max_dx:.3f})."
+            )
+
+    return {"dx": float(dx), "dy": float(dy), "response": float(response)}
 
 
 def _finite_corr(a: np.ndarray, b: np.ndarray) -> float:
@@ -191,11 +240,16 @@ def interband_shift_table(
     aligns with ``master_band``. Positive ``dx`` moves the target right;
     positive ``dy`` moves it down.
 
+    ``max_shifts`` is interpreted in native/full-resolution pixels. Downsampling
+    uses area resampling and the reported shifts are mapped back to native pixels.
+    The estimator is sub-pixel; values outside ``max_shifts`` are rejected rather
+    than clamped.
+
     This is a diagnostic measurement, not a certified geometric calibration.
     """
     master_band_index = _resolve_band_index(event, master_band)
     master_full = _get_band(event, master_band_index).astype(np.float32)
-    master, scale = _downsample(master_full, max_side=max_side)
+    master, scale_x, scale_y = _downsample(master_full, max_side=max_side)
 
     if target_bands == "all":
         if hasattr(event, "to_cube"):
@@ -242,23 +296,39 @@ def interband_shift_table(
 
         try:
             target_full = _get_band(event, target_band_index).astype(np.float32)
-            target, target_scale = _downsample(
+            target, target_scale_x, target_scale_y = _downsample(
                 target_full,
                 max_side=max_side,
             )
             master_use, target_use = _common_shape(master, target)
 
+            if not (
+                np.isclose(scale_x, target_scale_x, rtol=1e-6, atol=1e-6)
+                and np.isclose(scale_y, target_scale_y, rtol=1e-6, atol=1e-6)
+            ):
+                raise ValueError(
+                    "Master and target bands require different resize scales; "
+                    "cannot express one unambiguous native-pixel translation."
+                )
+
+            scaled_limit = None
+            if max_shifts is not None:
+                scaled_limit = (
+                    float(max_shifts[0]) / scale_y,
+                    float(max_shifts[1]) / scale_x,
+                )
+
             result = _phase_shift_target_to_master(
                 target_use,
                 master_use,
-                max_shifts=max_shifts,
+                max_shifts=scaled_limit,
             )
             dx_ds, dy_ds, response = _parse_shift_result(result)
 
-            effective_scale = float(max(scale, target_scale))
-            dx = dx_ds * effective_scale
-            dy = dy_ds * effective_scale
+            dx = dx_ds * scale_x
+            dy = dy_ds * scale_y
             shift_px = float(np.hypot(dx, dy))
+            effective_scale = float(max(scale_x, scale_y))
 
             corr_before = _finite_corr(master_use, target_use)
             aligned = warp_np_by_shift(
@@ -285,13 +355,19 @@ def interband_shift_table(
                 "level": _product_level(event),
                 "master_band": master_band,
                 "master_band_index": master_band_index,
+                "master_band_name": _band_metadata(master_band_index)["name"],
                 "target_band": target_band_index,
+                "target_band_name": _band_metadata(target_band_index)["name"],
+                "target_wavelength_nm": _band_metadata(target_band_index)["central_wavelength_nm"],
+                "target_role": _band_metadata(target_band_index)["role"],
                 "dx_px": dx,
                 "dy_px": dy,
                 "shift_px": shift_px,
                 "dx_px_downsampled": dx_ds,
                 "dy_px_downsampled": dy_ds,
                 "scale": effective_scale,
+                "scale_x": scale_x if status == "ok" else np.nan,
+                "scale_y": scale_y if status == "ok" else np.nan,
                 "response": response,
                 "corr_before": corr_before,
                 "corr_after": corr_after,

@@ -96,8 +96,8 @@ def test_local_interband_shift_field_recovers_tilewise_translation():
 
     ok = field[field["status"] == "ok"]
     assert len(ok) == 4
-    assert float(ok["dy_px"].median()) == pytest.approx(-2, abs=0.01)
-    assert float(ok["dx_px"].median()) == pytest.approx(3, abs=0.01)
+    assert float(ok["dy_px"].median()) == pytest.approx(-2, abs=0.05)
+    assert float(ok["dx_px"].median()) == pytest.approx(3, abs=0.05)
 
 
 def test_edge_overlay_shape_and_range():
@@ -148,3 +148,35 @@ def test_interband_shift_table_string_master_excludes_master():
     assert int(table["master_band_index"].iloc[0]) == 2
     assert 2 not in set(table["target_band"].astype(int))
     assert 3 in set(table["target_band"].astype(int))
+
+
+def test_interband_shift_table_recovers_subpixel_shift():
+    import cv2
+
+    rng = np.random.default_rng(17)
+    master = rng.normal(size=(256, 256)).astype(np.float32)
+    transform = np.array(
+        [[1.0, 0.0, -3.4], [0.0, 1.0, 2.25]],
+        dtype=np.float32,
+    )
+    target = cv2.warpAffine(
+        master,
+        transform,
+        (256, 256),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_REFLECT,
+    )
+    event = FakeEvent(np.stack([master, target]))
+
+    table = interband_shift_table(
+        event,
+        master_band=0,
+        target_bands=[1],
+        max_side=256,
+        max_shifts=(10, 10),
+    )
+    row = table.iloc[0]
+    assert row["status"] == "ok"
+    assert row["dx_px"] == pytest.approx(3.4, abs=0.25)
+    assert row["dy_px"] == pytest.approx(-2.25, abs=0.25)
+    assert row["response"] > 0.5

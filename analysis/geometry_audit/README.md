@@ -119,3 +119,57 @@ Every figure in the paper should be reproducible from these frozen tables.
 Phiesta is the measurement/reproducibility artifact. The scientific paper is
 not "we made a Python package"; it is the processing-chain geometry study that
 the package makes possible.
+
+
+## L1C primary probability sample
+
+The first public population-scale analysis uses a pre-specified probability
+sample from the full L1C catalogue. The default design draws 96 acquisitions
+with a fixed seed (20260910), jointly stratified by six equal-width temporal
+bins, three fixed equal-area latitude bands, and four longitude sectors.
+Every occupied stratum receives at least one acquisition; remaining allocation
+is proportional to stratum population. Sampling is random without replacement
+within strata, and inclusion probabilities/design weights are written to the
+sample manifest.
+
+The L1C registration reference is RED / MS3 (band index 3), matching the mission
+product specification. The encoded mission specification expects fine
+band-to-band alignment in L1C, while L1A is expected to precede that fine
+alignment. Thus L1C residuals are a processing-output quality measurement; the
+future paired L1A→L1C analysis directly tests how much geometry changes across
+the alignment stage once L1A download access is available.
+
+The global diagnostic uses anti-aliased area downsampling, sub-pixel phase
+correlation, and an explicit native-pixel plausibility bound. Out-of-range
+estimates are rejected rather than clipped to the bound.
+
+## Confirmatory L1C protocol v1
+
+The six inspected L1C products used for method development are not part of the
+confirmatory sample. The confirmatory global inter-band audit uses MS3/RED as
+the reference band. The primary measurement is made on the native 4096-pixel
+image; a 2048-pixel area-resampled measurement is retained as a pre-specified
+scale-stability diagnostic. Reported displacements are always expressed in
+native pixels.
+
+The resolution change is a measurement stress test, not a change to the
+scientific product: a genuine global translation should remain broadly
+consistent after resampling once the estimate is mapped back to native pixels.
+Scale disagreement is therefore recorded rather than hidden.
+
+No response threshold is used to delete observations. Likewise, the historical
+80-pixel plausibility value is only a diagnostic flag in the confirmatory run:
+extreme numerical estimates are retained. Primary results use the complete
+probability sample; response, correlation gain, and 4096-vs-2048 vector
+disagreement are reported as measurement-quality diagnostics and sensitivity
+analyses.
+
+### Confirmatory development exclusion freeze
+
+Before inspecting any confirmatory geometry outcomes, v1 freezes a development
+exclusion manifest in `confirmatory_exclusions_v1.csv`. It contains the six
+multiscale pilot products, the three earlier geometry-smoke products, and the
+historical L1A/L1C geometry development selection. The confirmatory probability
+sample is drawn only after applying this manifest. Metadata inspection alone is
+not treated as an outcome inspection.
+

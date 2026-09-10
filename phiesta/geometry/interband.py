@@ -81,6 +81,34 @@ def _resolve_band_index(event: Any, band: Any) -> int:
     )
 
 
+def _infer_band_count_without_materializing(event: Any) -> int:
+    """Infer band count without constructing a full image cube."""
+    for attr in ("n_bands", "num_bands", "band_count"):
+        if not hasattr(event, attr):
+            continue
+        value = getattr(event, attr)
+        try:
+            value = value() if callable(value) else value
+            n = int(value)
+        except (TypeError, ValueError):
+            continue
+        if n > 0:
+            return n
+
+    names = getattr(event, "BAND_NAMES", None)
+    if isinstance(names, dict):
+        indices = []
+        for value in names.values():
+            try:
+                indices.append(int(value))
+            except (TypeError, ValueError):
+                pass
+        if indices:
+            return max(indices) + 1
+
+    return len(PHISAT2_BANDS)
+
+
 def _downsample(
     image: np.ndarray,
     max_side: int = 1024,
@@ -252,14 +280,10 @@ def interband_shift_table(
     master, scale_x, scale_y = _downsample(master_full, max_side=max_side)
 
     if target_bands == "all":
-        if hasattr(event, "to_cube"):
-            cube = event.to_cube(bands="all", band_axis=0, copy=False)
-            n_bands = cube.shape[0]
-        elif hasattr(event, "as_numpy"):
-            arr = event.as_numpy()
-            n_bands = arr.shape[0] if arr.ndim == 3 else 1
-        else:
-            n_bands = 8
+        # Counting bands must not materialize the full product. Long-strip L1C
+        # products can be several GiB as a float32 cube even though registration
+        # itself is performed one band at a time.
+        n_bands = _infer_band_count_without_materializing(event)
         target_bands = list(range(n_bands))
 
     rows = []

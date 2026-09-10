@@ -180,3 +180,26 @@ def test_interband_shift_table_recovers_subpixel_shift():
     assert row["dx_px"] == pytest.approx(3.4, abs=0.25)
     assert row["dy_px"] == pytest.approx(-2.25, abs=0.25)
     assert row["response"] > 0.5
+
+
+def test_interband_all_does_not_materialize_full_cube():
+    class NoCubeEvent(FakeEvent):
+        def to_cube(self, *args, **kwargs):
+            raise AssertionError("to_cube must not be called just to count bands")
+
+        def as_numpy(self):
+            raise AssertionError("as_numpy must not be called just to count bands")
+
+    rng = np.random.default_rng(23)
+    base = rng.normal(size=(64, 64)).astype(np.float32)
+    event = NoCubeEvent(np.stack([base, base, base, base]))
+
+    table = interband_shift_table(
+        event,
+        master_band="RED",
+        target_bands="all",
+        max_side=64,
+    )
+
+    assert len(table) == 3
+    assert set(table["target_band"].astype(int)) == {0, 1, 3}

@@ -1,0 +1,41 @@
+{
+  "created_utc": "2026-09-10T16:35:47.296908+00:00",
+  "source_catalog": "D:\\PhiestaGeometryAudit\\cohort\\catalog_l1c.csv",
+  "exclusion_manifest": "analysis\\geometry_audit\\confirmatory_exclusions_v1.csv",
+  "source_catalog_rows_n": 5363,
+  "source_unique_product_ids_n": 5361,
+  "ambiguous_duplicate_product_ids_n": 2,
+  "ambiguous_duplicate_catalog_rows_n": 4,
+  "ambiguous_duplicate_product_ids": [
+    "1471",
+    "1615"
+  ],
+  "duplicate_audit_csv": "D:\\PhiestaGeometryAudit\\confirmatory_v1\\catalog_l1c_ambiguous_duplicates_v1.csv",
+  "requested_development_exclusion_n": 19,
+  "present_development_exclusion_n": 19,
+  "missing_development_exclusion_n": 0,
+  "confirmatory_eligible_n": 5340,
+  "present_development_exclusion_ids": [
+    "1403",
+    "1998",
+    "2387",
+    "3489",
+    "4890",
+    "5583",
+    "5584",
+    "5585",
+    "5622",
+    "5978",
+    "5979",
+    "5987",
+    "6008",
+    "6018",
+    "6025",
+    "6038",
+    "6040",
+    "6041",
+    "6045"
+  ],
+  "missing_development_exclusion_ids": [],
+  "principle": "Before confirmatory sampling, exclude products whose geometry outcomes were inspected during development and exclude every product_id that has multiple catalogue records; preserve those rows in an audit table rather than resolving them from row order."
+}

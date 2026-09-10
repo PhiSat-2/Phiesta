@@ -1,0 +1,23 @@
+{
+  "created_utc": "2026-09-10T16:36:12.384269+00:00",
+  "catalog": "D:\\PhiestaGeometryAudit\\confirmatory_v1\\catalog_l1c_confirmatory_eligible_v1.csv",
+  "population_n": 5340,
+  "sample_n": 96,
+  "seed": 20260910,
+  "time_bins": 6,
+  "occupied_strata": 71,
+  "time_start": "2024-08-20T11:37:04+00:00",
+  "time_end": "2026-09-07T09:36:35+00:00",
+  "time_edges": [
+    "2024-08-20T11:37:04+00:00",
+    "2024-12-23T03:16:59.166666666+00:00",
+    "2025-04-26T18:56:54.333333333+00:00",
+    "2025-08-29T10:36:49.500000+00:00",
+    "2026-01-01T02:16:44.666666667+00:00",
+    "2026-05-05T17:56:39.833333334+00:00",
+    "2026-09-07T09:36:35.000000001+00:00"
+  ],
+  "latitude_stratification": "3 fixed equal-area bands in sin(latitude): [-1,-1/3,1/3,1]",
+  "longitude_stratification": "4 fixed 90-degree sectors: [-180,-90,0,90,180]",
+  "allocation": "minimum 1 per occupied stratum, then proportional to remaining stratum population; simple random sampling without replacement within stratum"
+}

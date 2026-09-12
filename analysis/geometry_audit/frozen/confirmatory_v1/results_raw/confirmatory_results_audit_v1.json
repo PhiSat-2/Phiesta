@@ -1,0 +1,140 @@
+{
+  "created_utc": "2026-09-12T08:38:47.402221+00:00",
+  "git_head": "8c1d8294a94ebd93bb9863253876851473bfc9a6",
+  "sample_n": 96,
+  "sample_unique_product_ids": 96,
+  "run_rows": 96,
+  "run_status_counts": {
+    "SUCCESS": 90,
+    "PARTIAL": 6
+  },
+  "metric_rows": 1344,
+  "metric_ok_rows": 1333,
+  "metric_failed_rows": 11,
+  "primary_4096_rows": 672,
+  "primary_4096_ok_rows": 667,
+  "primary_4096_failed_rows": 5,
+  "stability_2048_rows": 672,
+  "stability_2048_ok_rows": 666,
+  "stability_2048_failed_rows": 6,
+  "pair_rows": 672,
+  "scale_pair_available_rows": 666,
+  "scale_pair_unavailable_rows": 6,
+  "target_bands": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6,
+    7
+  ],
+  "analysis_scales": [
+    4096,
+    2048
+  ],
+  "failed_measurements": [
+    {
+      "product_id": "1309",
+      "analysis_max_side": 4096,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "1309",
+      "analysis_max_side": 2048,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "1334",
+      "analysis_max_side": 4096,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "1334",
+      "analysis_max_side": 2048,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5481",
+      "analysis_max_side": 4096,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5481",
+      "analysis_max_side": 2048,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5701",
+      "analysis_max_side": 4096,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5701",
+      "analysis_max_side": 2048,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5821",
+      "analysis_max_side": 4096,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "5821",
+      "analysis_max_side": 2048,
+      "target_band": 0,
+      "target_band_name": "PAN",
+      "status": "failed",
+      "error": "ValueError: Registration image has near-zero variance."
+    },
+    {
+      "product_id": "1517",
+      "analysis_max_side": 2048,
+      "target_band": 1,
+      "target_band_name": "MS1",
+      "status": "failed",
+      "error": "SystemError: <built-in function resize> returned a result with an exception set"
+    }
+  ],
+  "sha256": {
+    "failed_measurements.csv": "1f8ca919cdbde15e3036e31d86ab334cc29b5ce5b92b14779c67dfb7719699fb",
+    "interband_multiscale.csv": "0873c53ae0c399d845ac4a19c223262745440d75adb44e5daba9d312d0fc0e29",
+    "interband_runs.csv": "616975b0716baf4931ee43504f96bf0821dc307a21ca00f5c4bee5edf79f4eb5",
+    "interband_scale_pairs.csv": "3392305abbc5968ab0c60fd069be265be0a8b5d9d89a7a87887a67e07f5ee0a9",
+    "l1c_primary_sample.csv": "486b8a52e70854a63afe3b1053f0a08e5b53ba13e2620d46bd1cd9d27ce1f9ae",
+    "non_success_runs.csv": "a7245b0f9c0a494f5c1dfc385302b33659770de88c28bcc6512e431c1e4ee3a4"
+  },
+  "notes": [
+    "4096 max-side is the pre-specified primary measurement.",
+    "2048 max-side is the pre-specified scale-stability diagnostic.",
+    "No failed measurement is imputed or replaced.",
+    "Products with partial measurements remain in the probability sample."
+  ]
+}

@@ -1,0 +1,12 @@
+product_id,analysis_max_side,target_band,target_band_name,status,error
+1309,4096,0,PAN,failed,ValueError: Registration image has near-zero variance.
+1309,2048,0,PAN,failed,ValueError: Registration image has near-zero variance.
+1334,4096,0,PAN,failed,ValueError: Registration image has near-zero variance.
+1334,2048,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5481,4096,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5481,2048,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5701,4096,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5701,2048,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5821,4096,0,PAN,failed,ValueError: Registration image has near-zero variance.
+5821,2048,0,PAN,failed,ValueError: Registration image has near-zero variance.
+1517,2048,1,MS1,failed,SystemError: <built-in function resize> returned a result with an exception set

@@ -1,0 +1,74 @@
+{
+  "sample_n": 96,
+  "run_status_counts": {
+    "SUCCESS": 90,
+    "PARTIAL": 6
+  },
+  "metric_rows": 1344,
+  "primary_valid_rows": 667,
+  "stability_valid_rows": 666,
+  "scale_pair_available_rows": 666,
+  "primary_shift_px": {
+    "n": 667,
+    "weighted_mean": 69.75681618599931,
+    "weighted_q25": 0.8860959703562522,
+    "weighted_median": 1.665621613330842,
+    "weighted_q75": 4.054936022940758,
+    "weighted_p90": 37.53719276804068,
+    "weighted_p95": 405.0484243003936,
+    "min": 0.0164365514867411,
+    "max": 3752.71492270789
+  },
+  "primary_response": {
+    "n": 667,
+    "weighted_mean": 0.46708657600253684,
+    "weighted_q25": 0.225662998665939,
+    "weighted_median": 0.4588402456138283,
+    "weighted_q75": 0.7263802430243231,
+    "weighted_p90": 0.9094966881457368,
+    "weighted_p95": 0.957413681782782,
+    "min": -0.0634902153615257,
+    "max": 1.1020495323464274
+  },
+  "primary_corr_gain": {
+    "n": 667,
+    "weighted_mean": -0.00010382621622532925,
+    "weighted_q25": -0.0001109038124048,
+    "weighted_median": 0.0007072921937406,
+    "weighted_q75": 0.0030199602751889,
+    "weighted_p90": 0.0104627284661901,
+    "weighted_p95": 0.0219494979237834,
+    "min": -0.3524048560022204,
+    "max": 0.4744196151778607
+  },
+  "scale_delta_px": {
+    "n": 666,
+    "weighted_mean": 66.3956019532995,
+    "weighted_q25": 0.3780466020890918,
+    "weighted_median": 0.7010194193101457,
+    "weighted_q75": 1.253037772835185,
+    "weighted_p90": 4.389387355909182,
+    "weighted_p95": 405.7319609709027,
+    "min": 0.024086864857187,
+    "max": 4608.51184600657
+  },
+  "acquisition_median_shift_px": {
+    "n": 96,
+    "weighted_mean": 41.03494175293055,
+    "weighted_q25": 1.002700059803171,
+    "weighted_median": 1.665621613330842,
+    "weighted_q75": 3.2622091938403504,
+    "weighted_p90": 15.034775616243364,
+    "weighted_p95": 361.1996479031445,
+    "min": 0.4658470651260788,
+    "max": 1612.857548093505
+  },
+  "notes": [
+    "Point estimates use analysis_design_weight from analysis_weights_v1.csv.",
+    "No failed measurement is imputed.",
+    "4096 max-side is the frozen primary analysis; 2048 is a stability diagnostic.",
+    "This script intentionally does not compute confidence intervals.",
+    "A naive within-original-stratum bootstrap is inappropriate because many original strata contain one sampled acquisition.",
+    "Large shifts and poor cross-scale agreement must be interpreted jointly with response/correlation QC; they are estimator outputs, not automatically physical displacements."
+  ]
+}

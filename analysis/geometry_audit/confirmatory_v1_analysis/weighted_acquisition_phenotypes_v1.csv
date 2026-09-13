@@ -1,0 +1,6 @@
+phenotype,sample_n,HT_estimated_acquisitions,weighted_percent
+no >80 px primary tail,73,4391.400000000001,82.25135793219705
+mixed / isolated tail,10,548.1999999999999,10.267840419554222
+estimator/acquisition failure-like,11,309.4,5.795092713991384
+cross-band coherent offset candidate,1,88.0,1.6482487357182993
+detector-geometry-like candidate,1,2.0,0.037460198539052254

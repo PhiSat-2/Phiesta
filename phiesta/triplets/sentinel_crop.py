@@ -478,7 +478,7 @@ def create_sentinel_crop(
         "crs": master_crs,
         "transform": master_transform,
         "compress": "deflate",
-        "bigtiff": "if_safer",
+        "bigtiff": "yes",
     }
 
     with rasterio.open(crop_path, "w", **profile) as dst:
@@ -529,7 +529,7 @@ def create_sentinel_crop(
         bands=list(S2_BANDS_SIM),
         metadata={
             "status": "SUCCESS",
-            "shape": tuple(stack.shape),
+            "shape": (len(S2_BANDS_SIM), int(master_shape[0]), int(master_shape[1])),
             "crs": str(master_crs),
             "bounds_lonlat": [min_lon, min_lat, max_lon, max_lat],
         },

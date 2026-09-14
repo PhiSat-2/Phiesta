@@ -437,7 +437,11 @@ def create_sentinel_crop(
         target_datetime=source.s2_datetime,
     )
 
-    final_channels = []
+    # Keep only one full-resolution Sentinel band in RAM at a time.
+    # The old implementation retained all seven float32 arrays and then
+    # allocated a second full cube with np.stack(), which can require
+    # several GiB for ordinary buffered crops.
+    temp_band_paths = []
     master_crs = None
     master_transform = None
     master_shape = None
@@ -460,16 +464,17 @@ def create_sentinel_crop(
                 quantification_value=metadata["quantification_value"],
                 radiometric_offsets=metadata["radiometric_offsets"],
             )
-            final_channels.append(arr)
-
-    stack = np.stack(final_channels, axis=0).astype(np.float32)
+            temp_path = output_dir / f".{product_id}_{band}_crop_tmp.npy"
+            np.save(temp_path, np.asarray(arr, dtype=np.float32))
+            temp_band_paths.append(temp_path)
+            del arr
 
     profile = {
         "driver": "GTiff",
         "dtype": "float32",
-        "count": stack.shape[0],
-        "height": stack.shape[1],
-        "width": stack.shape[2],
+        "count": len(S2_BANDS_SIM),
+        "height": master_shape[0],
+        "width": master_shape[1],
         "crs": master_crs,
         "transform": master_transform,
         "compress": "deflate",
@@ -477,7 +482,11 @@ def create_sentinel_crop(
     }
 
     with rasterio.open(crop_path, "w", **profile) as dst:
-        dst.write(stack)
+        for band_index, temp_path in enumerate(temp_band_paths, start=1):
+            band_arr = np.load(temp_path)
+            dst.write(band_arr, band_index)
+            del band_arr
+            temp_path.unlink(missing_ok=True)
         dst.descriptions = tuple(S2_BANDS_NAMES)
         dst.update_tags(
             PHIESTA_SENTINEL_VALUE_DOMAIN="toa_reflectance",

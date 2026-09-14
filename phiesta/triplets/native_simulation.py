@@ -208,23 +208,47 @@ def simulate_single_file_native(
     output_tiff_path = Path(output_tiff_path)
     output_tiff_path.parent.mkdir(parents=True, exist_ok=True)
 
+    target_size = metadata.get("target_size")
+    if target_size is not None:
+        target_size = tuple(int(v) for v in target_size)
+
     with rasterio.open(s2_tiff_path) as src:
-        stack_chw = src.read().astype(np.float32)
         profile = src.profile.copy()
         src_height = int(src.height)
         src_width = int(src.width)
+
+        if src.count != 7:
+            raise ValueError(
+                "Phiesta native simulation expects a 7-band Sentinel crop in order "
+                f"{S2_BANDS}; got {src.count} band(s)."
+            )
+
+        if target_size is not None and (src_height, src_width) != target_size:
+            target_h, target_w = target_size
+            resized_bands = []
+
+            for band_index in range(1, src.count + 1):
+                band = src.read(band_index).astype(np.float32, copy=False)
+                resized = cv2.resize(
+                    band,
+                    (target_w, target_h),
+                    interpolation=cv2.INTER_LINEAR,
+                )
+                resized_bands.append(resized)
+                del band
+
+            stack_chw = np.stack(resized_bands, axis=0).astype(
+                np.float32, copy=False
+            )
+            del resized_bands
+        else:
+            stack_chw = src.read().astype(np.float32, copy=False)
 
     if stack_chw.ndim != 3 or stack_chw.shape[0] != 7:
         raise ValueError(
             "Phiesta native simulation expects a 7-band Sentinel crop in order "
             f"{S2_BANDS}; got shape {stack_chw.shape}."
         )
-
-    target_size = metadata.get("target_size")
-    if target_size is not None:
-        target_size = tuple(int(v) for v in target_size)
-        if tuple(stack_chw.shape[1:]) != target_size:
-            stack_chw = _resize_stack(stack_chw, target_size, cv2.INTER_LINEAR)
 
     work_h, work_w = stack_chw.shape[1:]
     sun_zenith = _prepare_sun_zenith(metadata, (work_h, work_w))

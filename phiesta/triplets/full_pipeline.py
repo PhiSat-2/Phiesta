@@ -51,7 +51,7 @@ def _valid_fraction(path: str | Path, band: int = 1) -> float:
 def build_full_sentinel_triplet(
     event: Any,
     product_id: str | int | None = None,
-    output_root: str | Path = "data/triplets",
+    output_root: str | Path = None,
     window_days: int = 15,
     max_cloud_cover: float = 20.0,
     buffer_km: float = 20.0,
@@ -63,7 +63,7 @@ def build_full_sentinel_triplet(
     max_keypoints: int = 8000,
     final_margin_pct: float = 0.15,
     sentinel_backend: str = "auto",
-    sentinel_cache_dir: str | Path = "cache/sentinel2",
+    sentinel_cache_dir: str | Path = None,
     cdse_username: str | None = None,
     cdse_password: str | None = None,
     cdse_access_token: str | None = None,

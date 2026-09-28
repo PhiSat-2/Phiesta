@@ -7,15 +7,12 @@ from shapely.geometry import shape
 
 
 def get_corrected_footprint(
-    georef_report_path: str | Path,
+    georef_report: str,
 ) -> list[str]:
     """
     Read the corrected PhiSat-2 footprint from Phiesta report
     
     """
-    with open(georef_report_path, "r") as f:
-        georef_report = json.load(f)
-
     footprint_geojson = georef_report["polygon_geojson"]
 
     footprint = shape(footprint_geojson)
@@ -29,7 +26,7 @@ def get_corrected_footprint(
 
 
 def phisat_intersection_with_majortom_grid(
-    georef_report_path: str | Path,
+    georef_report: str,
 ):
 
     # get MajorTom grid
@@ -42,7 +39,7 @@ def phisat_intersection_with_majortom_grid(
     grid = gpd.read_parquet(grid_path)
 
     # get Phisat2 footprint corrected using phiesta
-    phisat_footprint = get_corrected_footprint(georef_report_path)
+    phisat_footprint = get_corrected_footprint(georef_report)
 
     intersecting_tiles = grid[
         grid.intersects(phisat_footprint)
@@ -54,10 +51,11 @@ def phisat_intersection_with_majortom_grid(
 
 
 if __name__ == '__main__':
+
+    with open("/home/sromagnoli/Phiesta/georef_6039.json", "r") as georef_report:
+        georef_report = json.load(georef_report)
     
-    tiles = phisat_intersection_with_majortom_grid(
-        "/home/sromagnoli/Phiesta/georef_6039.json"
-    )
+    tiles = phisat_intersection_with_majortom_grid(georef_report)
 
     print(tiles)
 

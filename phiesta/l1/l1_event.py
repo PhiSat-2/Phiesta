@@ -170,9 +170,9 @@ class L1_event:
         triplet=None,
         source="simulated",
         sentinel_backend="download",
-        sentinel_cache_dir="cache/sentinel2",
         buffer_km=20.0,
         snr_psf_method: str = None,
+        output_root=None,
         proxy_target_size=(1024, 1024),
         final_margin_pct=0.15,
         final_simulation_target_size=None,
@@ -198,9 +198,12 @@ class L1_event:
         triplet_kwargs = dict(triplet_kwargs or {})
         strict_kwargs = dict(strict_kwargs or {})
 
+        sentinel_cache_dir = Path(output_root/"cache/sentinel2")
+
         if triplet is None:
             triplet = self.build_full_sentinel_triplet(
                 sentinel_backend=sentinel_backend,
+                output_root=output_root,
                 sentinel_cache_dir=sentinel_cache_dir,
                 buffer_km=buffer_km,
                 snr_psf_method=snr_psf_method,

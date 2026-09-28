@@ -95,7 +95,7 @@ def save_batch_run_configuration(
 
 def cleanup_phiesta_outputs(
     product_id: str,
-    output_root: str | Path = "data/triplets",
+    output_root: str | Path,
     remove_triplet = False,
     remove_phisat_l1 = True,
     remove_sentinel_cache = True,
@@ -107,32 +107,41 @@ def cleanup_phiesta_outputs(
 
     output_root = Path(output_root)
 
-    if remove_triplet:
-        triplet_dir = output_root / product_id
-        if triplet_dir.exists():
-            shutil.rmtree(triplet_dir)
+    sentinel_cache = output_root / "cache/sentinel2"
+    triplet_dir = output_root / product_id
+    georef_file = triplet_dir / f"georef_{product_id}.json"
 
     if remove_phisat_l1:
-        l1_dir = Path("data/l1")
-        for folder in l1_dir.glob(f"*{product_id}*"):
-            shutil.rmtree(folder, ignore_errors=True)
+      l1_dir = Path("data/l1")
+      for folder in l1_dir.glob(f"*{product_id}*"):
+        shutil.rmtree(folder, ignore_errors=True)
 
     if remove_sentinel_cache:
-        cache_dir = Path("cache/sentinel2")
-        if cache_dir.exists():
-            shutil.rmtree(cache_dir)
+        if sentinel_cache.exists():
+            shutil.rmtree(sentinel_cache)
 
     if remove_georef_file:
-        georef_dir = output_root / f"georef_{product_id}.json"
-        if georef_dir.exists():
-            georef_dir.unlink()
+      if georef_file.exists():
+        georef_file.unlink()
+
+    if remove_triplet and triplet_dir.exists():
+      if remove_georef_file:
+        shutil.rmtree(triplet_dir)
+
+      else:
+        for item in triplet_dir.iterdir():          
+          if item != georef_file:
+            if item.is_dir():
+              shutil.rmtree(item)              
+            else:
+              item.unlink()
 
 
 
 def run_phiesta_over_one_product(
     product_id: str,
     snr_psf_method: str,
-    output_root: str | Path = "data/triplets"
+    output_root: str | Path,
 ) -> dict:
 
     single_product_report = {
@@ -164,10 +173,10 @@ def run_phiesta_over_one_product(
         "error_max_px": None,
     }
 
-    event = None
+    # event = None
 
     output_root = Path(output_root)
-    georef_report_path = output_root / f"georef_{product_id}.json"
+    georef_report_path = output_root/product_id/ f"georef_{product_id}.json"
 
     try:
         load_dotenv()
@@ -183,6 +192,7 @@ def run_phiesta_over_one_product(
             sentinel_backend = "download",
             source = "simulated",
             snr_psf_method = snr_psf_method,
+            output_root = output_root,
             cdse_username = os.getenv("CDSE_USERNAME"),
             cdse_password = os.getenv("CDSE_PASSWORD"),
             verbose = True,
@@ -250,6 +260,7 @@ if __name__ == '__main__':
 
         cleanup_phiesta_outputs(
             phisat_pid,
+            tmp_dir,
             remove_triplet = False,
             remove_phisat_l1 = True,
             remove_sentinel_cache = True,

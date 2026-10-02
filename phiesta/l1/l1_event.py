@@ -166,6 +166,7 @@ class L1_event:
 
     def get_georef(
         self,
+        product_id: str,
         method="sentinel_strict",
         triplet=None,
         source="simulated",
@@ -202,6 +203,7 @@ class L1_event:
 
         if triplet is None:
             triplet = self.build_full_sentinel_triplet(
+                product_id=product_id
                 sentinel_backend=sentinel_backend,
                 output_root=output_root,
                 sentinel_cache_dir=sentinel_cache_dir,
